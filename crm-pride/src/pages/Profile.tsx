@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { profileAPI } from '../utils/api';
+import { useTelegram } from '../hooks/useTelegram';
 
 const ProfileContainer = styled.div`
   display: flex;
@@ -83,10 +84,30 @@ const Profile: React.FC = () => {
     email: '',
     date_of_birth: '',
   });
+   const { isTelegram, showAlert } = useTelegram();
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    const token = localStorage.getItem('auth_token');
+    if (isTelegram && !token) {
+      setIsAuthenticated(false);
+      showAlert('Требуется авторизация. Перезапустите приложение.');
+    }
+     loadProfile();
+  }, [isTelegram, showAlert]);
+
+  if (!isAuthenticated && isTelegram) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h3>❌ Требуется авторизация</h3>
+        <p>Перезапустите приложение через Telegram бота</p>
+      </div>
+    );
+  }
+
+  // useEffect(() => {
+   
+  // }, []);
 
   const loadProfile = async () => {
     try {

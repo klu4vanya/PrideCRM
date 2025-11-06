@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { gamesAPI } from '../utils/api';
+import { useTelegram } from '../hooks/useTelegram';
 
 const GamesList = styled.div`
   display: flex;
@@ -54,10 +55,30 @@ interface Game {
 const Schedule: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+   const { isTelegram, showAlert } = useTelegram();
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
-    loadGames();
-  }, []);
+    const token = localStorage.getItem('auth_token');
+    if (isTelegram && !token) {
+      setIsAuthenticated(false);
+      showAlert('Требуется авторизация. Перезапустите приложение.');
+    }
+     loadGames();
+  }, [isTelegram, showAlert]);
+
+  if (!isAuthenticated && isTelegram) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h3>❌ Требуется авторизация</h3>
+        <p>Перезапустите приложение через Telegram бота</p>
+      </div>
+    );
+  }
+
+  // useEffect(() => {
+   
+  // }, []);
 
   const loadGames = async () => {
     try {

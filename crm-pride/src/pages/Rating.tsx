@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { ratingAPI } from '../utils/api';
+import { useTelegram } from '../hooks/useTelegram';
 
 const RatingTable = styled.div`
   display: flex;
@@ -51,10 +52,30 @@ interface RatingUser {
 const Rating: React.FC = () => {
   const [rating, setRating] = useState<RatingUser[]>([]);
   const [loading, setLoading] = useState(true);
+   const { isTelegram, showAlert } = useTelegram();
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    if (isTelegram && !token) {
+      setIsAuthenticated(false);
+      showAlert('Требуется авторизация. Перезапустите приложение.');
+    }
     loadRating();
-  }, []);
+  }, [isTelegram, showAlert]);
+
+  if (!isAuthenticated && isTelegram) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h3>❌ Требуется авторизация</h3>
+        <p>Перезапустите приложение через Telegram бота</p>
+      </div>
+    );
+  }
+
+  // useEffect(() => {
+    
+  // }, []);
 
   const loadRating = async () => {
     try {

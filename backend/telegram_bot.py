@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-MINI_APP_URL = os.getenv("MINI_APP_URL", "https://localhost:3000/mini-app")
+MINI_APP_URL = "https://pride-crm.vercel.app"
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api")
 
 if not BOT_TOKEN:
