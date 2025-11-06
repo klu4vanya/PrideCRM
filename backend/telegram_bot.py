@@ -1,102 +1,100 @@
 import os
 import requests
 from dotenv import load_dotenv
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Загружаем переменные окружения
 load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api/")
+MINI_APP_URL = os.getenv("MINI_APP_URL", "https://localhost:3000/mini-app")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api")
 
 if not BOT_TOKEN:
     raise ValueError("❌ TELEGRAM_BOT_TOKEN not set in .env")
 
-
-# ============================================================
-# Handlers
-# ============================================================
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Команда /start"""
+    """Команда /start для запуска Mini App"""
     user = update.effective_user
-    keyboard = [[KeyboardButton("Авторизоваться 🔐")]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-
-    await update.message.reply_text(
-        f"👋 Привет, {user.first_name or 'игрок'}!\n"
-        "Я помогу тебе авторизоваться на сайте Poker CRM.\n\n"
-        "Нажми кнопку ниже, чтобы пройти авторизацию.",
-        reply_markup=reply_markup
-    )
-
-
-async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Авторизация пользователя через Telegram"""
-    user = update.effective_user
-    data = {
-        "telegram_data": {
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-        }
+    
+    # Регистрируем пользователя в системе через API
+    telegram_data = {
+        "id": user.id,
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
     }
-
+    
     try:
-        headers = {"Authorization": f"Bearer {os.getenv('TELEGRAM_BOT_TOKEN')}"}
-        response = requests.post(f"{API_BASE_URL}auth/telegram/callback/", json=data, headers=headers)
-
+        # Авторизуем пользователя через API
+        response = requests.post(
+            f"{API_BASE_URL}/auth/telegram/",
+            json={"telegram_data": telegram_data}
+        )
+        
         if response.status_code == 200:
-            info = response.json()
-            token = info.get("token")
-            if token:
-                await update.message.reply_text(
-                    "✅ Авторизация успешна!\n"
-                    f"Перейдите по ссылке, чтобы войти на сайт:\n\n"
-                    f"http://localhost:3000/auth?token={token}"
+            # Показываем кнопку для открытия Mini App
+            keyboard = [[
+                InlineKeyboardButton(
+                    "🎮 Открыть Poker CRM", 
+                    web_app={"url": MINI_APP_URL}
                 )
+            ]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(
+                f"👋 Добро пожаловать, {user.first_name or 'игрок'}!\n\n"
+                "🎯 Poker CRM поможет вам:\n"
+                "• Смотреть расписание игр\n"
+                "• Регистрироваться на турниры\n"
+                "• Следить за своим рейтингом\n"
+                "• Узнавать результаты\n\n"
+                "Нажмите кнопку ниже, чтобы открыть приложение!",
+                reply_markup=reply_markup
+            )
         else:
             await update.message.reply_text(
-                f"❌ Ошибка авторизации:\n{response.text[:2000]}"  # ограничим длину для безопасности
+                "❌ Ошибка при авторизации. Попробуйте позже."
             )
+            
     except Exception as e:
-        await update.message.reply_text(f"⚠️ Ошибка соединения с сервером: {str(e)[:2000]}")
-
-
+        print(f"Error: {e}")
+        await update.message.reply_text(
+            f"⚠️ Сервис временно недоступен. Попробуйте позже.\n{e}"
+        )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Доступные команды:\n"
-        "/start — начало\n"
-        "/help — помощь\n"
-        "Кнопка 'Авторизоваться' — для авторизации через сайт"
+    """Команда /help"""
+    help_text = (
+        "🤖 Команды бота Poker CRM:\n\n"
+        "/start - Начать работу с ботом\n"
+        "/help - Показать эту справку\n\n"
+        "📱 После запуска бота вы получите доступ к:\n"
+        "• Расписанию турниров\n"
+        "• Рейтингу игроков\n"
+        "• Личному профилю\n"
+        "• Результатам игр\n\n"
+        "По вопросам обращайтесь к администратору."
     )
-
-
-# ============================================================
-# MAIN
-# ============================================================
+    await update.message.reply_text(help_text)
 
 def main():
     """Запуск Telegram-бота"""
-    print("🤖 Запуск Telegram-бота...")
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(MessageHandler(filters.Regex("Авторизоваться"), auth))
-
-    print("✅ Бот успешно запущен. Ожидание сообщений...")
-    app.run_polling()
-
+    print("🤖 Запуск Telegram-бота Poker CRM...")
+    
+    try:
+        app = ApplicationBuilder().token(BOT_TOKEN).build()
+        
+        # Добавляем обработчики команд
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("help", help_command))
+        
+        print("✅ Бот успешно запущен. Ожидание сообщений...")
+        app.run_polling()
+        
+    except Exception as e:
+        print(f"❌ Ошибка запуска бота: {e}")
 
 if __name__ == "__main__":
     main()

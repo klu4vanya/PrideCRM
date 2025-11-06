@@ -1,273 +1,269 @@
-# views.py
-
-import time
-import hmac, hashlib
-from django.conf import settings
-from django.utils import timezone
-from django.db import IntegrityError, transaction
-from django.shortcuts import get_object_or_404
-from dotenv import load_dotenv
+from datetime import timezone
+import logging
+from django.db.models import Q, Count, Sum
 from rest_framework import viewsets, status, permissions
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from .models import Users, Games, Participant, SupportTicket
+from .serializers import *
 
-from .models import Users, Games, Participant
-from .serializers import UserSerializer, GameSerializer, ParticipantSerializer
-# Проверка подписи Telegram (HMAC-SHA256 по примеру Telegram Login Widget)
-def verify_telegram_auth(data: dict, bot_token: str) -> bool:
-    if 'hash' not in data:
-        return False
-    received_hash = data.pop('hash')
-    data_check_arr = [f"{k}={v}" for k, v in sorted(data.items())]
-    data_check_string = "\n".join(data_check_arr)
-    secret_key = hashlib.sha256(bot_token.encode()).digest()
-    hmac_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(hmac_hash, received_hash)
+logger = logging.getLogger(__name__)
 
-def find_user_by_telegram(telegram_data):
-    tg_id = telegram_data.get('id')
-    tg_username = telegram_data.get('username')
-    if tg_id:
-        user = Users.objects.filter(user_id=tg_id).first()
-        if user:
-            return user
-    if tg_username:
-        return Users.objects.filter(username=tg_username).first()
-    return None
+class IsAdminOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_admin
 
-
-class TelegramCallbackView(APIView):
+class TelegramAuthView(APIView):
     permission_classes = [permissions.AllowAny]
-
+    
     def post(self, request):
-        telegram_data = request.data.get("telegram_data") or {}
+        telegram_data = request.data.get("telegram_data")
         if not telegram_data:
-            return Response({"detail": "telegram_data required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        bot_token = getattr(settings, "TELEGRAM_BOT_TOKEN", None)
-        if not bot_token:
-            return Response({"detail": "Server error: TELEGRAM_BOT_TOKEN not set"},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        auth_header = request.headers.get("Authorization")
-        expected_header = f"Bearer {bot_token}"
-        if auth_header != expected_header:
-            return Response({"detail": "Unauthorized bot request"},
-                            status=status.HTTP_403_FORBIDDEN)
-
-        # ⚙️ Ищем пользователя
-        user = find_user_by_telegram(telegram_data)
-        created = False
-
-        if not user:
-            username = telegram_data.get("username") or str(telegram_data.get("id"))
-            try:
-                # создаём без вложенной транзакции
-                user = Users.objects.create(
-                    username=username,
-                    user_id=str(telegram_data.get("id")),
-                    first_name=telegram_data.get("first_name", ""),
-                    last_name=telegram_data.get("last_name", ""),
-                )
-                created = True
-            except Exception as e:
-                return Response({"detail": "Cannot create user", "error": str(e)},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # 🔒 гарантируем, что пользователь сохранён
-        user.save()
-
-        # 🏆 не создаём рейтинг автоматически — по твоему требованию
-        # get_or_create_rating(user)
-
-        # 🔑 теперь создаём токен (user гарантированно в БД)
+            return Response({"error": "Telegram data required"}, status=400)
+        
+        user_id = str(telegram_data.get('id'))
+        username = telegram_data.get('username')
+        first_name = telegram_data.get('first_name', '')
+        last_name = telegram_data.get('last_name', '')
+        
         try:
+            user, created = Users.objects.get_or_create(
+                user_id=user_id,
+                defaults={
+                    'username': username or user_id,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                }
+            )
+            
+            if created:
+                logger.info(f"New user created: {user_id}")
+            else:
+                # Обновляем базовую информацию при каждом входе
+                user.first_name = first_name
+                user.last_name = last_name
+                if username:
+                    user.username = username
+                user.save()
+            
+            # Создаем или получаем токен
+            from rest_framework.authtoken.models import Token
             token, _ = Token.objects.get_or_create(user=user)
-        except Exception as e:
-            return Response({"detail": "Cannot create token", "error": str(e)},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        serializer = UserSerializer(user)
-        return Response(
-            {"user": serializer.data, "token": token.key, "is_new": created},
-            status=status.HTTP_200_OK
-        )
-
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        role = "admin" if user.is_staff or user.is_superuser else "user"
-        return Response({
-            "id": user.user_id,  # ← ИСПОЛЬЗУЙТЕ user_id вместо id
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": role,
-        })
-class CompleteProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    """
-    POST /auth/telegram/complete-profile/
-    Используется новым пользователем для заполнения дополнительных полей:
-    { "first_name": "...", "last_name": "...", "phone": "...", "email": "...", "date_of_birth": "YYYY-MM-DD" }
-    """
-    def post(self, request):
-        user = request.user
-        data = request.data
-        for field in ('first_name', 'last_name', 'phone', 'email', 'date_of_birth'):
-            if field in data:
-                setattr(user, field, data[field])
-        user.save()
-        return Response({"user": UserSerializer(user).data})
-
-class GamesViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-    """
-    /games/        (GET list)
-    /games/{pk}/   (GET retrieve)
-    /games/{pk}/register/   (POST — зарегистрироваться на игру)
-    /games/{pk}/unregister/ (POST — отписаться от игры)
-    """
-    def list(self, request):
-        qs = Games.objects.all().order_by('date', 'time')
-        serializer = GameSerializer(qs, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-        game = get_object_or_404(Games, pk=pk)
-        serializer = GameSerializer(game)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'])
-    def register(self, request, pk=None):
-        user = request.user
-        if user.is_banned:
-            return Response({"detail": "User banned"}, status=status.HTTP_403_FORBIDDEN)
-        game = get_object_or_404(Games, pk=pk)
-        try:
-            Participant.objects.create(user=user, tournament=game)
-        except IntegrityError:
-            return Response({"detail": "Already registered"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"detail": "registered"}, status=status.HTTP_201_CREATED)
-
-    @action(detail=True, methods=['post'])
-    def unregister(self, request, pk=None):
-        user = request.user
-        game = get_object_or_404(Games, pk=pk)
-        part = Participant.objects.filter(user=user, tournament=game).first()
-        if not part:
-            return Response({"detail": "Not registered"}, status=status.HTTP_400_BAD_REQUEST)
-        part.delete()
-        return Response({"detail": "unregistered"})
-
-class ParticipantViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-    """
-    /participants/ (GET)
-    Admin: все записи, пользователь: только его участия.
-    """
-    def list(self, request):
-        if request.user.is_admin:
-            qs = Participant.objects.select_related('user', 'tournament').all()
-        else:
-            qs = Participant.objects.select_related('user', 'tournament').filter(user=request.user)
-        serializer = ParticipantSerializer(qs, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-        part = get_object_or_404(Participant, pk=pk)
-        if part.user != request.user and not request.user.is_admin:
-            return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
-        serializer = ParticipantSerializer(part)
-        return Response(serializer.data)
-
-class RatingListView(APIView):
-    permission_classes = [IsAuthenticated]
-    """
-    GET /rating/ — список всех пользователей и очков по убыванию (с ранжированием).
-    """
-    def get(self, request):
-        ratings = Users.objects.order_by('-points')
-        data = []
-        for i, r in enumerate(ratings, start=1):
-            data.append({
-                "rank": i,
-                "user": UserSerializer(r).data,
+            
+            return Response({
+                "token": token.key,
+                "user": UserSerializer(user).data,
+                "is_new": created
             })
-        return Response(data)
+            
+        except Exception as e:
+            logger.error(f"Telegram auth error: {str(e)}")
+            return Response({"error": "Authentication failed"}, status=500)
 
-# class AdminRatingView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     """
-#     POST /admin/rating/{user_id}/ 
-#     Тело: {"delta": int} или {"set": int}
-#     Изменяет очки пользователя (только для админа).
-#     """
-#     def post(self, request, user_id):
-#         if not request.user.is_admin:
-#             return Response({"detail": "admin only"}, status=status.HTTP_403_FORBIDDEN)
-#         target = get_object_or_404(Users, pk=user_id)
-#         delta = request.data.get('delta')
-#         setv = request.data.get('set')
-#         if delta is None and setv is None:
-#             return Response({"detail": "Provide 'delta' or 'set'"}, status=status.HTTP_400_BAD_REQUEST)
-#         try:
-#             if delta is not None:
-#                 target.points += int(delta)
-#             if setv is not None:
-#                 target.points = int(setv)
-#         except (ValueError, TypeError):
-#             return Response({"detail": "Values must be integers"}, status=status.HTTP_400_BAD_REQUEST)
-#         target.save()
-#         return Response({"detail": "rating updated", "user": UserSerializer(target).data})
+class UserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = Users.objects.all()
+    serializer_class = UserSerializer
+    
+    @action(detail=True, methods=['post'])
+    def ban(self, request, pk=None):
+        user = self.get_object()
+        user.is_banned = True
+        user.save()
+        return Response({"status": "user banned"})
+    
+    @action(detail=True, methods=['post'])
+    def unban(self, request, pk=None):
+        user = self.get_object()
+        user.is_banned = False
+        user.save()
+        return Response({"status": "user unbanned"})
+
+class GameViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminOrReadOnly]
+    queryset = Games.objects.filter(is_active=True)
+    serializer_class = GameSerializer
+    
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Games.objects.all()
+        return Games.objects.filter(is_active=True)
+    
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save()
+    
+    @action(detail=True, methods=['post'])
+    def add_participant(self, request, pk=None):
+        game = self.get_object()
+        user_id = request.data.get('user_id')
+        
+        try:
+            user = Users.objects.get(user_id=user_id)
+        except Users.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        
+        participant, created = Participant.objects.get_or_create(
+            user=user,
+            game=game,
+            defaults={
+                'entries': request.data.get('entries', 1),
+                'rebuys': request.data.get('rebuys', 0),
+                'addons': request.data.get('addons', 0),
+            }
+        )
+        
+        if not created:
+            participant.entries = request.data.get('entries', participant.entries)
+            participant.rebuys = request.data.get('rebuys', participant.rebuys)
+            participant.addons = request.data.get('addons', participant.addons)
+            participant.save()
+        
+        serializer = ParticipantDetailSerializer(participant)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def results(self, request, pk=None):
+        game = self.get_object()
+        participants = Participant.objects.filter(game=game).select_related('user')
+        
+        # Автоматический расчет очков на основе алгоритма
+        total_players = participants.count()
+        base_points = game.base_points
+        
+        # Расчет бонусных очков
+        if total_players > game.min_players_for_extra_points:
+            extra_players = total_players - game.min_players_for_extra_points
+            total_points = base_points + (extra_players * game.points_per_extra_player)
+        else:
+            total_points = base_points
+        
+        # Распределение очков (простая схема - можно усложнить)
+        results_data = []
+        for i, participant in enumerate(participants.order_by('position')):
+            # Простое распределение: 1 место - 40%, 2 - 30%, 3 - 20%, остальные - 10%
+            if i == 0:  # 1 место
+                points_earned = int(total_points * 0.4)
+            elif i == 1:  # 2 место
+                points_earned = int(total_points * 0.3)
+            elif i == 2:  # 3 место
+                points_earned = int(total_points * 0.2)
+            else:  # Остальные
+                points_earned = int(total_points * 0.1 / max(1, (total_players - 3)))
+            
+            participant.final_points = points_earned
+            participant.save()
+            
+            # Обновляем общие очки пользователя
+            participant.user.points += points_earned
+            participant.user.total_games_played += 1
+            participant.user.save()
+            
+            results_data.append({
+                'user': UserSerializer(participant.user).data,
+                'entries': participant.entries,
+                'rebuys': participant.rebuys,
+                'addons': participant.addons,
+                'position': participant.position,
+                'points_earned': points_earned
+            })
+        
+        return Response({
+            'game': GameSerializer(game).data,
+            'total_players': total_players,
+            'total_points_distributed': total_points,
+            'results': results_data
+        })
+
+class ParticipantViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ParticipantDetailSerializer
+    
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Participant.objects.all()
+        return Participant.objects.filter(user=self.request.user)
+    
+    @action(detail=False, methods=['post'])
+    def register(self, request):
+        game_id = request.data.get('game_id')
+        try:
+            game = Games.objects.get(pk=game_id, is_active=True)
+        except Games.DoesNotExist:
+            return Response({"error": "Game not found"}, status=404)
+        
+        if request.user.is_banned:
+            return Response({"error": "User is banned"}, status=403)
+        
+        participant, created = Participant.objects.get_or_create(
+            user=request.user,
+            game=game
+        )
+        
+        if created:
+            return Response({"status": "registered"}, status=201)
+        else:
+            return Response({"status": "already registered"})
+
+class RatingView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        users = Users.objects.filter(is_banned=False).order_by('-points')
+        ranked_users = []
+        
+        for rank, user in enumerate(users, start=1):
+            ranked_users.append({
+                'rank': rank,
+                'user': UserSerializer(user).data,
+                'points': user.points,
+                'games_played': user.total_games_played
+            })
+        
+        return Response(ranked_users)
+
+class SupportTicketViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupportTicketSerializer
+    
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return SupportTicket.objects.all()
+        return SupportTicket.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    """
-    GET /profile/ — данные текущего пользователя + его очки и место в рейтинге.
-    """
+    
     def get(self, request):
         user = request.user
-        all_ratings = list(Users.objects.order_by('-points'))
-        rank = next((i + 1 for i, r in enumerate(all_ratings) if r.user_id == user.user_id), None)
+        user_data = UserSerializer(user).data
+        
+        # Получаем ближайшие игры, на которые зарегистрирован пользователь
+        upcoming_participations = Participant.objects.filter(
+            user=user,
+            game__date__gte=timezone.now().date()
+        ).select_related('game')[:5]
+        
         return Response({
-            "user": UserSerializer(user).data,
-            "rank": rank
+            'user': user_data,
+            'upcoming_games': GameSerializer(
+                [p.game for p in upcoming_participations], 
+                many=True
+            ).data
         })
-
-class AdminUsersViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
-    """
-    /admin/users/       (GET list all users)
-    /admin/users/{id}/  (GET retrieve, PATCH partial_update)
-    Доступ только для админов (is_admin=True).
-    """
-    def _ensure_admin(self, request):
-        if not request.user.is_admin:
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("admin only")
-
-    def list(self, request):
-        self._ensure_admin(request)
-        qs = Users.objects.all()
-        serializer = UserSerializer(qs, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, pk=None):
-        self._ensure_admin(request)
-        user = get_object_or_404(Users, pk=pk)
-        return Response(UserSerializer(user).data)
-
-    def partial_update(self, request, pk=None):
-        self._ensure_admin(request)
-        user = get_object_or_404(Users, pk=pk)
-        for field, value in request.data.items():
-            if hasattr(user, field):
-                setattr(user, field, value)
-        user.save()
-        return Response(UserSerializer(user).data)
+    
+    def patch(self, request):
+        user = request.user
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)

@@ -1,40 +1,84 @@
-import React from "react";
-import { createGlobalStyle } from "styled-components";
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import styled from 'styled-components';
+import { useTelegram } from './hooks/useTelegram';
+import { authAPI } from './utils/api';
+import Layout from './components/Layout';
+import Schedule from './pages/Schedule';
+import Rating from './pages/Rating';
+import Profile from './pages/Profile';
+import About from './pages/About';
+import Support from './pages/Support';
 
-import AdminPanel from "./Components/Admin";
-import Ranked from "./Components/Ranked";
-import TournamentSchedule from "./Components/Schedule";
-import TournamentProfile from "./Components/MyProfile";
-import { MainPage } from "./Components/MainPage";
-import AuthPage from "./Components/Auth";
-
-import "./App.css";
-
-const GlobalStyle = createGlobalStyle`
- @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
-
-  body {
-    font-family: "Poppins", sans-serif;
-  }
+const Loader = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
 `;
 
-function App() {
+const App: React.FC = () => {
+  const { user, isTelegram } = useTelegram();
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const authenticate = async () => {
+      if (!isTelegram || !user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await authAPI.telegramAuth({
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          username: user.username,
+        });
+        
+        localStorage.setItem('auth_token', response.data.token);
+        setLoading(false);
+      } catch (error: any) {
+        console.error('Auth error:', error);
+        setAuthError(error.response?.data?.error || 'Authentication failed');
+        setLoading(false);
+      }
+    };
+
+    authenticate();
+  }, [user, isTelegram]);
+
+  if (loading) {
+    return <Loader>⏳ Загрузка приложения...</Loader>;
+  }
+
+  if (authError) {
+    return (
+      <Loader>
+        ❌ Ошибка авторизации: {authError}
+        <br />
+        <button onClick={() => window.location.reload()}>
+          Попробовать снова
+        </button>
+      </Loader>
+    );
+  }
+
   return (
-    <>
-      <GlobalStyle />
-      <BrowserRouter>
+    <Router>
+      <Layout>
         <Routes>
-          <Route path="/" element={<MainPage />} />
-          <Route path="/admin" element={ <AdminPanel /> } />
-          <Route path="/ranked" element={<Ranked />} /> 
-          <Route path="/schedule" element={<TournamentSchedule />} />
-          <Route path="/myprofile" element={<TournamentProfile />} />
-          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/" element={<Schedule />} />
+          <Route path="/rating" element={<Rating />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/support" element={<Support />} />
         </Routes>
-      </BrowserRouter>
-    </>
+      </Layout>
+    </Router>
   );
-}
+};
 
 export default App;
