@@ -16,8 +16,21 @@ api.interceptors.request.use((config) => {
 });
 
 export const authAPI = {
-  telegramAuth: (telegramData: any) => 
-    api.post('/auth/telegram/', { telegram_data: telegramData }),
+  telegramAuth: (telegramData: any) => {
+    // Правильный формат - распаковываем данные
+    const requestData = {
+      telegram_data: {
+        id: telegramData.id,
+        first_name: telegramData.first_name,
+        last_name: telegramData.last_name || '',
+        username: telegramData.username || '',
+        language_code: telegramData.language_code || 'ru'
+      }
+    };
+    
+    console.log('🔄 Sending auth request:', requestData);
+    return api.post('/auth/telegram/', requestData);
+  },
 };
 
 export const gamesAPI = {
