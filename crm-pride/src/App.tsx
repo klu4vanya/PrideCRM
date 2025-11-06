@@ -2,13 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import { useTelegram } from './hooks/useTelegram';
-import { authAPI } from './utils/api';
+import { authAPI, gamesAPI } from './utils/api';
 import Layout from './components/Layout';
 import Schedule from './pages/Schedule';
 import Rating from './pages/Rating';
 import Profile from './pages/Profile';
 import About from './pages/About';
 import Support from './pages/Support';
+
+const DebugContainer = styled.div`
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 10px;
+  font-family: monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+`;
 
 const Loader = styled.div`
   display: flex;
@@ -20,121 +33,125 @@ const Loader = styled.div`
   gap: 15px;
 `;
 
-const ErrorContainer = styled.div`
-  text-align: center;
-  padding: 20px;
-  max-width: 400px;
-`;
-
-const RetryButton = styled.button`
-  background: #2196F3;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-top: 15px;
-
-  &:hover {
-    background: #1976D2;
-  }
-`;
-
 const App: React.FC = () => {
   const { user, isTelegram, showAlert } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
+
+  const addDebug = (message: string) => {
+    setDebugInfo(prev => prev + message + '\n');
+  };
 
   useEffect(() => {
     const authenticate = async () => {
+      addDebug('🔍 Начало аутентификации...');
+      
       try {
-        // Если не в Telegram - пропускаем аутентификацию (для разработки)
+        addDebug(`isTelegram: ${isTelegram}`);
+        addDebug(`User: ${JSON.stringify(user, null, 2)}`);
+
+        // Если не в Telegram - пропускаем аутентификацию
         if (!isTelegram) {
-          console.log('🚫 Not in Telegram environment - development mode');
+          addDebug('🚫 Не в Telegram окружении');
           setLoading(false);
           return;
         }
+
+        // Проверяем данные пользователя
+        if (!user || !user.id) {
+          addDebug('❌ Нет данных пользователя от Telegram');
+          setAuthError('Не удалось получить данные из Telegram');
+          setLoading(false);
+          return;
+        }
+
+        addDebug('✅ Данные пользователя получены');
 
         // Проверяем, есть ли уже токен
         const existingToken = localStorage.getItem('auth_token');
+        addDebug(`Токен в localStorage: ${existingToken ? 'ЕСТЬ' : 'НЕТ'}`);
+
         if (existingToken) {
-          console.log('✅ Using existing token');
-          setLoading(false);
-          return;
+          // Проверяем валидность токена
+          try {
+            addDebug('🔍 Проверяем существующий токен...');
+            await gamesAPI.getGames();
+            addDebug('✅ Токен валиден');
+            setLoading(false);
+            return;
+          } catch (error) {
+            addDebug('❌ Токен невалиден, удаляем...');
+            localStorage.removeItem('auth_token');
+          }
         }
 
-        if (!user) {
-          throw new Error('No user data from Telegram');
-        }
-
-        console.log('🔐 Authenticating with Telegram...', user);
+        // Аутентифицируемся
+        addDebug('🔄 Отправляем запрос аутентификации...');
         
-        // Аутентифицируемся через telegram_data (как в вашем API)
-        const response = await authAPI.telegramAuth({
+        const authPayload = {
           id: user.id,
           first_name: user.first_name,
           last_name: user.last_name || '',
           username: user.username || '',
           language_code: user.language_code || 'ru',
-        });
+        };
 
-        console.log('🔑 Auth response:', response.data);
+        addDebug(`📤 Данные для отправки: ${JSON.stringify(authPayload, null, 2)}`);
+
+        const response = await authAPI.telegramAuth(authPayload);
         
+        addDebug(`✅ Ответ от сервера: ${response.status}`);
+        addDebug(`📨 Данные ответа: ${JSON.stringify(response.data, null, 2)}`);
+
         if (response.data.token) {
           localStorage.setItem('auth_token', response.data.token);
-          console.log('✅ Authentication successful');
+          addDebug('🔑 Токен успешно сохранен!');
+          showAlert('✅ Авторизация успешна!');
         } else {
-          throw new Error('No token in response');
+          throw new Error('Нет токена в ответе');
         }
 
       } catch (error: any) {
-        console.error('❌ Auth error:', error);
+        addDebug(`❌ Ошибка: ${error.message}`);
         
-        // Более детальная обработка ошибок
         if (error.response) {
-          // Ошибка от сервера
-          const errorMessage = error.response.data?.detail || 
-                              error.response.data?.error || 
-                              'Ошибка сервера';
-          setAuthError(`Ошибка сервера: ${errorMessage}`);
+          addDebug(`Ошибка сервера: ${error.response.status}`);
+          addDebug(`Детали: ${JSON.stringify(error.response.data)}`);
+          setAuthError(`Ошибка сервера: ${error.response.status}`);
         } else if (error.request) {
-          // Не удалось отправить запрос
-          setAuthError('Не удалось подключиться к серверу. Проверьте подключение к интернету.');
+          addDebug('Нет ответа от сервера');
+          setAuthError('Не удалось подключиться к серверу');
         } else {
-          // Другие ошибки
-          setAuthError(error.message || 'Неизвестная ошибка авторизации');
+          addDebug(`Другая ошибка: ${error.message}`);
+          setAuthError(error.message);
         }
         
-        showAlert('Ошибка авторизации. Перезапустите приложение.');
+        showAlert('❌ Ошибка авторизации');
       } finally {
         setLoading(false);
       }
     };
 
-    // Добавляем небольшую задержку для инициализации Telegram
-    setTimeout(authenticate, 500);
+    // Даем время на инициализацию Telegram
+    setTimeout(authenticate, 1000);
   }, [user, isTelegram, showAlert]);
 
   const handleRetry = () => {
     localStorage.removeItem('auth_token');
     setLoading(true);
     setAuthError(null);
+    setDebugInfo('');
     window.location.reload();
-  };
-
-  const handleContinueWithoutAuth = () => {
-    setLoading(false);
-    setAuthError(null);
   };
 
   if (loading) {
     return (
       <Loader>
         <div>⏳ Загрузка Poker CRM...</div>
-        <div style={{ fontSize: '14px', color: '#666' }}>
-          {isTelegram ? 'Выполняется авторизация...' : 'Инициализация...'}
-        </div>
+        <DebugContainer>
+          {debugInfo || 'Инициализация...'}
+        </DebugContainer>
       </Loader>
     );
   }
@@ -142,24 +159,24 @@ const App: React.FC = () => {
   if (authError) {
     return (
       <Loader>
-        <ErrorContainer>
-          <h2>❌ Ошибка авторизации</h2>
-          <p>{authError}</p>
-          <RetryButton onClick={handleRetry}>
-            Попробовать снова
-          </RetryButton>
-          {!isTelegram && (
-            <>
-              <div style={{ margin: '15px 0', color: '#666' }}>или</div>
-              <RetryButton onClick={handleContinueWithoutAuth}>
-                Продолжить без авторизации
-              </RetryButton>
-              <div style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
-                💡 Для полного функционала запустите через Telegram бота
-              </div>
-            </>
-          )}
-        </ErrorContainer>
+        <div style={{ color: 'red', marginBottom: '15px' }}>❌ {authError}</div>
+        <DebugContainer>
+          {debugInfo}
+        </DebugContainer>
+        <button 
+          onClick={handleRetry}
+          style={{
+            background: '#2196F3',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            marginTop: '15px'
+          }}
+        >
+          Попробовать снова
+        </button>
       </Loader>
     );
   }
@@ -167,6 +184,14 @@ const App: React.FC = () => {
   return (
     <Router>
       <Layout>
+        {/* Показываем debug info в разработке */}
+        {process.env.NODE_ENV === 'development' && debugInfo && (
+          <DebugContainer>
+            <strong>Debug Info:</strong>
+            <br />
+            {debugInfo}
+          </DebugContainer>
+        )}
         <Routes>
           <Route path="/" element={<Schedule />} />
           <Route path="/rating" element={<Rating />} />
