@@ -6,14 +6,26 @@ export const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Интерцептор для добавления токена
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
+  console.log('🔐 API Request - Token:', token ? 'YES' : 'NO');
   if (token) {
     config.headers.Authorization = `Token ${token}`;
   }
   return config;
 });
+
+// Добавьте обработку 401 ошибок
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.log('❌ 401 Unauthorized - clearing token');
+      localStorage.removeItem('auth_token');
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authAPI = {
   telegramAuth: (telegramData: any) => {

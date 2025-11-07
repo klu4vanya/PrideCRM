@@ -20,126 +20,106 @@ const Loader = styled.div`
   gap: 15px;
 `;
 
-const ErrorContainer = styled.div`
-  text-align: center;
-  padding: 20px;
-  max-width: 400px;
-`;
-
-const RetryButton = styled.button`
-  background: #2196f3;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  margin-top: 15px;
-
-  &:hover {
-    background: #1976d2;
-  }
-`;
-const testData = {
-  id: 463021572,
-  first_name: "ваня",
-  last_name: "",
-  username: "it_can_vizit",
-  language_code: "ru",
-};
-
 const App: React.FC = () => {
-  const { user, isTelegram, showAlert } = useTelegram();
+  const { user, isTelegram, webApp, showAlert } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    const authenticate = async () => {
-      try {
-        if (!isTelegram) {
-          console.log("🚫 Not in Telegram environment - development mode");
-          setLoading(false);
-          return;
-        }
+    const initializeApp = async () => {
+      console.log('🔍 App initialization started');
+      console.log('🔍 isTelegram:', isTelegram);
+      console.log('🔍 WebApp:', webApp);
+      console.log('🔍 User:', user);
+      console.log('🔍 URL search:', window.location.search);
 
+      try {
+        // 1. ВСЕГДА проверяем токен из URL (и в Mini App, и в браузере)
         const urlParams = new URLSearchParams(window.location.search);
         const tokenFromUrl = urlParams.get("token");
+        
+        console.log('🔑 Token from URL:', tokenFromUrl);
 
         if (tokenFromUrl) {
           localStorage.setItem("auth_token", tokenFromUrl);
           console.log("✅ Token from URL saved to localStorage");
-          // Убираем токен из URL
+          // Очищаем URL
           window.history.replaceState({}, "", window.location.pathname);
-        }
-
-        if (!user) {
-          console.log("⏳ Waiting for user data...");
+          setLoading(false);
           return;
         }
 
-        console.log("🔐 Authenticating with Telegram...", user);
-
-        // ПРАВИЛЬНЫЙ формат данных
-        const response = await authAPI.telegramAuth({
-          id: Number(user.id),
-          first_name: String(user.first_name || ""),
-          last_name: String(user.last_name || ""),
-          username: String(user.username || ""),
-          language_code: String(user.language_code || "ru"),
-        });
-
-        console.log("🔑 Auth response:", response.data);
-
-        if (response.data.token) {
-          localStorage.setItem("auth_token", response.data.token);
-          console.log("✅ Authentication successful");
-          showAlert("✅ Авторизация успешна!");
-        } else {
-          throw new Error("No token in response");
+        // 2. Проверяем существующий токен
+        const existingToken = localStorage.getItem("auth_token");
+        if (existingToken) {
+          console.log("✅ Using existing token from localStorage");
+          setLoading(false);
+          return;
         }
+
+        // 3. Если в Telegram Mini App, но нет токена - аутентифицируемся
+        if (isTelegram && user) {
+          console.log("🔐 Starting Telegram authentication...", user);
+
+          const response = await authAPI.telegramAuth({
+            id: user.id,
+            first_name: user.first_name || "",
+            last_name: user.last_name || "",
+            username: user.username || "",
+            language_code: user.language_code || "ru",
+          });
+
+          console.log("🔑 Auth response:", response.data);
+
+          if (response.data.token) {
+            localStorage.setItem("auth_token", response.data.token);
+            console.log("✅ Telegram authentication successful");
+            showAlert("✅ Авторизация успешна!");
+          } else {
+            throw new Error("No token in response");
+          }
+        } else if (isTelegram && !user) {
+          console.log("⏳ Waiting for Telegram user data...");
+          // Пробуем еще раз через секунду
+          setTimeout(() => setLoading(false), 1000);
+          return;
+        } else {
+          console.log("🚫 Not in Telegram - showing public version");
+        }
+
       } catch (error: any) {
         console.error("❌ Auth error:", error);
-
+        
+        let errorMessage = "Неизвестная ошибка авторизации";
+        
         if (error.response) {
-          const errorMessage =
-            error.response.data?.detail ||
-            error.response.data?.error ||
-            "Ошибка сервера";
-          setAuthError(`Ошибка сервера: ${errorMessage}`);
+          errorMessage = error.response.data?.detail || error.response.data?.error || "Ошибка сервера";
         } else if (error.request) {
-          setAuthError("Не удалось подключиться к серверу.");
+          errorMessage = "Не удалось подключиться к серверу";
         } else {
-          setAuthError(error.message || "Неизвестная ошибка авторизации");
+          errorMessage = error.message;
         }
-
-        showAlert("Ошибка авторизации. Перезапустите приложение.");
+        
+        setAuthError(errorMessage);
+        
+        if (isTelegram) {
+          showAlert(`❌ Ошибка авторизации: ${errorMessage}`);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    // ЗАПУСКАЕМ аутентификацию!
-    setTimeout(authenticate, 500);
-  }, [user, isTelegram, showAlert]);
-
-  const handleRetry = () => {
-    localStorage.removeItem("auth_token");
-    setLoading(true);
-    setAuthError(null);
-    window.location.reload();
-  };
-
-  const handleContinueWithoutAuth = () => {
-    setLoading(false);
-    setAuthError(null);
-  };
+    // Даем время на инициализацию
+    setTimeout(initializeApp, 1000);
+  }, [user, isTelegram, webApp, showAlert]);
 
   if (loading) {
     return (
       <Loader>
         <div>⏳ Загрузка Poker CRM...</div>
         <div style={{ fontSize: "14px", color: "#666" }}>
-          {isTelegram ? "Выполняется авторизация..." : "Инициализация..."}
+          {isTelegram ? "Инициализация Telegram..." : "Загрузка..."}
         </div>
       </Loader>
     );
@@ -148,24 +128,24 @@ const App: React.FC = () => {
   if (authError) {
     return (
       <Loader>
-        <ErrorContainer>
+        <div style={{ textAlign: "center", padding: "20px" }}>
           <h2>❌ Ошибка авторизации</h2>
           <p>{authError}</p>
-          <RetryButton onClick={handleRetry}>Попробовать снова</RetryButton>
-          {!isTelegram && (
-            <>
-              <div style={{ margin: "15px 0", color: "#666" }}>или</div>
-              <RetryButton onClick={handleContinueWithoutAuth}>
-                Продолжить без авторизации
-              </RetryButton>
-              <div
-                style={{ marginTop: "15px", fontSize: "14px", color: "#666" }}
-              >
-                💡 Для полного функционала запустите через Telegram бота
-              </div>
-            </>
-          )}
-        </ErrorContainer>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              background: "#2196f3",
+              color: "white",
+              border: "none",
+              padding: "12px 24px",
+              borderRadius: "8px",
+              cursor: "pointer",
+              marginTop: "15px"
+            }}
+          >
+            Попробовать снова
+          </button>
+        </div>
       </Loader>
     );
   }

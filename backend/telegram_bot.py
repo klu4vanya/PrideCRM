@@ -33,6 +33,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             json={"telegram_data": telegram_data}
         )
         token = response.json()['token']
+        await update.message.reply_text(
+             f"токен {token}"
+         )
         mini_app_url = f"https://pride-crm.vercel.app?token={token}"
         
         if response.status_code == 200:
