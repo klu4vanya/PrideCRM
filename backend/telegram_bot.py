@@ -32,13 +32,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{API_BASE_URL}/auth/telegram/",
             json={"telegram_data": telegram_data}
         )
+        token = response.json()['token']
+        mini_app_url = f"https://pride-crm.vercel.app?token={token}"
         
         if response.status_code == 200:
             # Показываем кнопку для открытия Mini App
             keyboard = [[
                 InlineKeyboardButton(
                     "🎮 Открыть Poker CRM", 
-                    web_app={"url": MINI_APP_URL}
+                     web_app={"url": mini_app_url}
                 )
             ]]
             reply_markup = InlineKeyboardMarkup(keyboard)

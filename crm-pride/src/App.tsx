@@ -62,11 +62,14 @@ const App: React.FC = () => {
           return;
         }
 
-        const existingToken = localStorage.getItem("auth_token");
-        if (existingToken) {
-          console.log("✅ Using existing token");
-          setLoading(false);
-          return;
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get("token");
+
+        if (tokenFromUrl) {
+          localStorage.setItem("auth_token", tokenFromUrl);
+          console.log("✅ Token from URL saved to localStorage");
+          // Убираем токен из URL
+          window.history.replaceState({}, "", window.location.pathname);
         }
 
         if (!user) {
