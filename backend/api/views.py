@@ -40,32 +40,37 @@ class TelegramInitAuthView(APIView):
     permission_classes = []
 
     def post(self, request):
-        print("=== DEBUG TELEGRAM AUTH ===")
-        print(f"Request data: {request.data}")
+        # print(f"Request data: {request.data}")
+
+        from logging import Logger
+
+        l = Logger("arsfg")
+        l.warning("=== TELEGRAM AUTH DEBUG ===")
+        l.warning(f"Request data: {request.data}")
         
         init_data = request.data.get("initData")
         if not init_data:
             return Response({"error": "Missing initData"}, status=400)
 
         try:
-            # Простая проверка без валидации хеша для теста
+            # Парсим initData
             parsed_data = dict(parse_qsl(init_data))
-            print(f"Parsed data: {parsed_data}")
+            l.warning(f"Parsed data keys: {list(parsed_data.keys())}")
             
+            # Получаем данные пользователя (пропускаем валидацию для теста)
             user_json = parsed_data.get("user")
             if not user_json:
                 return Response({"error": "Missing user data"}, status=400)
 
             user_data = json.loads(user_json)
-            print(f"User data: {user_data}")
+            l.warning(f"User data: {user_data}")
 
-            # Пропускаем проверку хеша для тестирования
-            # TODO: Включить обратно после отладки
-            
             telegram_id = str(user_data["id"])
             username = user_data.get("username", f"user_{telegram_id}")
             first_name = user_data.get("first_name", "")
             last_name = user_data.get("last_name", "")
+
+            l.warning(f"Looking for user with telegram_id: {telegram_id}")
 
             # Создаём или обновляем пользователя
             user, created = Users.objects.get_or_create(
@@ -77,25 +82,50 @@ class TelegramInitAuthView(APIView):
                 }
             )
 
-            # Создаём токен
-            from rest_framework.authtoken.models import Token
-            token, _ = Token.objects.get_or_create(user=user)
+            l.warning(f"User created: {created}")
+            l.warning(f"User object: {user}")
+            l.warning(f"User username: {user.username}")
 
-            return Response({
+            # ДИАГНОСТИКА: Проверяем существование токена
+            from rest_framework.authtoken.models import Token
+            
+            # Проверяем есть ли уже токен
+            existing_token = Token.objects.filter(user=user).first()
+            if existing_token:
+                l.warning(f"Existing token found: {existing_token.key}")
+                token = existing_token
+            else:
+                # Создаем новый токен
+                token = Token.objects.create(user=user)
+                l.warning(f"New token created: {token.key}")
+
+            # Формируем ответ
+            response_data = {
                 "token": token.key,
                 "user": {
-                    "id": user.user_id,
                     "username": user.username,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
+                    "telegram_id": user.user_id,
                 }
-            })
+            }
+
+            # Добавляем id если есть
+            if hasattr(user, 'id'):
+                response_data["user"]["id"] = user.id
+            elif hasattr(user, 'user_id'):
+                response_data["user"]["id"] = user.user_id
+
+            l.warning(f"Final response data: {response_data}")
+
+            return Response(response_data)
 
         except Exception as e:
-            print(f"ERROR: {str(e)}")
+            l.warning(f"ERROR in auth: {str(e)}")
             import traceback
-            print(traceback.format_exc())
-            return Response({"error": f"Debug: {str(e)}"}, status=500)
+            l.warning(f"Traceback: {traceback.format_exc()}")
+            return Response({"error": f"Auth failed: {str(e)}"}, status=500)
+
 class TelegramAuthView(APIView):
     permission_classes = [permissions.AllowAny]
     

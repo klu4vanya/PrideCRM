@@ -10,8 +10,8 @@ router.register(r'support-tickets', SupportTicketViewSet, 'support-tickets')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('auth/telegram/', TelegramAuthView.as_view(), name='telegram-auth'),
     path("auth/telegram/validate/", TelegramInitAuthView.as_view(), name="telegram-init-auth"),
+    path('auth/telegram/', TelegramAuthView.as_view(), name='telegram-auth'),
     path('rating/', RatingView.as_view(), name='rating'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),

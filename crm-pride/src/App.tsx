@@ -38,8 +38,7 @@ const App: React.FC = () => {
           if (authResponse.data.token) {
             localStorage.setItem("auth_token", authResponse.data.token);
             console.log("🔑 Token saved");
-            setToken(authResponse.data.token);
-            //  await loadProfile();
+            setToken(authResponse.data);
           }
         } else {
           throw new Error("No token in response", token);
