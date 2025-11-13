@@ -109,12 +109,13 @@ const Profile: React.FC = () => {
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
         setAuthError(error.response?.data?.error || error.message);
+        console.log(authError)
       } finally {
         setLoading(false);
       }
     };
     authenticateAndLoadProfile();
-  }, [initData]);
+  }, [initData, authError]);
 
 
   const loadProfile = async () => {
@@ -151,7 +152,8 @@ const Profile: React.FC = () => {
     }
   };
 
-  if (!profile) return <div>Загрузка профиля...</div>;
+  if (!profile) return <div>Загрузить профиль не удалось</div>;
+  if (loading) return <div>Загрузка...</div>;
 
   return (
     <ProfileContainer>

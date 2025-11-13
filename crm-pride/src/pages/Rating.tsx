@@ -77,12 +77,13 @@ const Rating: React.FC = () => {
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
         setAuthError(error.response?.data?.error || error.message);
+        console.log(authError)
       } finally {
         setLoading(false);
       }
     };
     authenticateAndLoadProfile();
-  }, [initData]);
+  }, [initData, authError]);
 
   const loadRating = async () => {
     try {
