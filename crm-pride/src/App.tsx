@@ -54,9 +54,9 @@ const App: React.FC = () => {
       setLoading(false);
     };
 
-    if (!loading) return;
-    setTimeout(initializeApp, 1000);
-  }, [isTelegram, initData, showAlert, loading]);
+    // if (!loading) return;
+    // setTimeout(initializeApp, 1000);
+  }, [isTelegram, initData, showAlert]);
 
   if (loading) {
     return (
