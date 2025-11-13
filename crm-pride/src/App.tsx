@@ -64,6 +64,7 @@ const App: React.FC = () => {
         <div>⏳ Загрузка Poker CRM...</div>
         <div style={{ fontSize: "14px", color: "#666" }}>
           {isTelegram ? "Инициализация Telegram..." : "Загрузка..."}
+          {initData ? 'авторизация успешна' : 'auth failed'}
         </div>
       </Loader>
     );
