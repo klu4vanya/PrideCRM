@@ -1,5 +1,12 @@
 from django.utils import timezone
 import logging
+import hashlib
+from django.conf import settings
+from rest_framework.response import Response
+from urllib.parse import parse_qsl
+import hmac
+import json
+from rest_framework.authtoken.models import Token
 from django.db.models import Q, Count, Sum
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
@@ -17,6 +24,68 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return True
         return request.user.is_admin
 
+class IsAdminUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_admin
+class TelegramInitAuthView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        init_data = request.data.get("initData")
+        if not init_data:
+            return Response({"error": "Missing initData"}, status=400)
+
+        bot_token = settings.TELEGRAM_BOT_TOKEN
+        secret_key = hashlib.sha256(bot_token.encode()).digest()
+
+        data_list = sorted(
+            [f"{k}={v}" for k, v in parse_qsl(init_data) if k != "hash"]
+        )
+        data_check_string = "\n".join(data_list)
+        computed_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+
+        received_hash = dict(parse_qsl(init_data)).get("hash")
+        if computed_hash != received_hash:
+            return Response({"error": "Invalid hash"}, status=403)
+
+        # Достаём JSON с пользователем
+        user_json = dict(parse_qsl(init_data)).get("user")
+        user_data = json.loads(user_json)
+
+        telegram_id = str(user_data["id"])
+        username = user_data.get("username")
+        first_name = user_data.get("first_name", "")
+        last_name = user_data.get("last_name", "")
+
+        # Создаём или обновляем пользователя
+        user, created = Users.objects.get_or_create(
+            user_id=telegram_id,
+            defaults={
+                "username": username or telegram_id,
+                "first_name": first_name,
+                "last_name": last_name,
+            }
+        )
+
+        if not created:
+            user.first_name = first_name
+            user.last_name = last_name
+            if username:
+                user.username = username
+            user.save()
+
+        # Создаём токен
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({
+            "token": token.key,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+        })
 class TelegramAuthView(APIView):
     permission_classes = [permissions.AllowAny]
     
@@ -67,7 +136,11 @@ class TelegramAuthView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     queryset = Users.objects.all()
-    serializer_class = UserSerializer
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        return UserSerializer
     
     @action(detail=True, methods=['post'])
     def ban(self, request, pk=None):
@@ -82,23 +155,57 @@ class UserViewSet(viewsets.ModelViewSet):
         user.is_banned = False
         user.save()
         return Response({"status": "user unbanned"})
+    
+    @action(detail=True, methods=['post'])
+    def add_points(self, request, pk=None):
+        user = self.get_object()
+        points = request.data.get('points', 0)
+        
+        try:
+            points = int(points)
+            user.points += points
+            user.save()
+            return Response({
+                "status": "points added",
+                "new_points": user.points
+            })
+        except ValueError:
+            return Response({"error": "Invalid points value"}, status=400)
 
 class GameViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
-    queryset = Games.objects.filter(is_active=True)
-    serializer_class = GameSerializer
     
     def get_queryset(self):
         if self.request.user.is_admin:
             return Games.objects.all()
         return Games.objects.filter(is_active=True)
     
+    def get_serializer_class(self):
+        if self.action in ['create', 'update']:
+            return GameCreateSerializer
+        return GameSerializer
+    
     def perform_destroy(self, instance):
         instance.is_active = False
         instance.save()
     
+    @action(detail=True, methods=['get'])
+    def participants_admin(self, request, pk=None):
+        """Получение всех участников игры для админа"""
+        if not request.user.is_admin:
+            return Response({"error": "Admin access required"}, status=403)
+        
+        game = self.get_object()
+        participants = Participant.objects.filter(game=game).select_related('user')
+        serializer = ParticipantAdminSerializer(participants, many=True)
+        return Response(serializer.data)
+    
     @action(detail=True, methods=['post'])
-    def add_participant(self, request, pk=None):
+    def add_participant_admin(self, request, pk=None):
+        """Добавление участника админом"""
+        if not request.user.is_admin:
+            return Response({"error": "Admin access required"}, status=403)
+        
         game = self.get_object()
         user_id = request.data.get('user_id')
         
@@ -126,58 +233,58 @@ class GameViewSet(viewsets.ModelViewSet):
         serializer = ParticipantDetailSerializer(participant)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['get'])
-    def results(self, request, pk=None):
+    @action(detail=True, methods=['post'])
+    def remove_participant_admin(self, request, pk=None):
+        """Удаление участника админом"""
+        if not request.user.is_admin:
+            return Response({"error": "Admin access required"}, status=403)
+        
         game = self.get_object()
-        participants = Participant.objects.filter(game=game).select_related('user')
+        user_id = request.data.get('user_id')
         
-        # Автоматический расчет очков на основе алгоритма
-        total_players = participants.count()
-        base_points = game.base_points
+        try:
+            user = Users.objects.get(user_id=user_id)
+            participant = Participant.objects.get(user=user, game=game)
+            participant.delete()
+            return Response({"status": "participant removed"})
+        except Users.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        except Participant.DoesNotExist:
+            return Response({"error": "Participant not found"}, status=404)
+    
+    @action(detail=True, methods=['post'])
+    def update_participant_admin(self, request, pk=None):
+        """Обновление данных участника админом"""
+        if not request.user.is_admin:
+            return Response({"error": "Admin access required"}, status=403)
         
-        # Расчет бонусных очков
-        if total_players > game.min_players_for_extra_points:
-            extra_players = total_players - game.min_players_for_extra_points
-            total_points = base_points + (extra_players * game.points_per_extra_player)
-        else:
-            total_points = base_points
+        game = self.get_object()
+        user_id = request.data.get('user_id')
         
-        # Распределение очков (простая схема - можно усложнить)
-        results_data = []
-        for i, participant in enumerate(participants.order_by('position')):
-            # Простое распределение: 1 место - 40%, 2 - 30%, 3 - 20%, остальные - 10%
-            if i == 0:  # 1 место
-                points_earned = int(total_points * 0.4)
-            elif i == 1:  # 2 место
-                points_earned = int(total_points * 0.3)
-            elif i == 2:  # 3 место
-                points_earned = int(total_points * 0.2)
-            else:  # Остальные
-                points_earned = int(total_points * 0.1 / max(1, (total_players - 3)))
+        try:
+            user = Users.objects.get(user_id=user_id)
+            participant = Participant.objects.get(user=user, game=game)
             
-            participant.final_points = points_earned
+            # Обновляем поля
+            if 'entries' in request.data:
+                participant.entries = request.data['entries']
+            if 'rebuys' in request.data:
+                participant.rebuys = request.data['rebuys']
+            if 'addons' in request.data:
+                participant.addons = request.data['addons']
+            if 'position' in request.data:
+                participant.position = request.data['position']
+            if 'final_points' in request.data:
+                participant.final_points = request.data['final_points']
+            
             participant.save()
+            serializer = ParticipantDetailSerializer(participant)
+            return Response(serializer.data)
             
-            # Обновляем общие очки пользователя
-            participant.user.points += points_earned
-            participant.user.total_games_played += 1
-            participant.user.save()
-            
-            results_data.append({
-                'user': UserSerializer(participant.user).data,
-                'entries': participant.entries,
-                'rebuys': participant.rebuys,
-                'addons': participant.addons,
-                'position': participant.position,
-                'points_earned': points_earned
-            })
-        
-        return Response({
-            'game': GameSerializer(game).data,
-            'total_players': total_players,
-            'total_points_distributed': total_points,
-            'results': results_data
-        })
+        except Users.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        except Participant.DoesNotExist:
+            return Response({"error": "Participant not found"}, status=404)
 
 class ParticipantViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -267,3 +374,26 @@ class ProfileView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+class AdminDashboardView(APIView):
+    """Дашборд для администратора"""
+    permission_classes = [IsAdminUser]
+    
+    def get(self, request):
+        stats = {
+            'total_users': Users.objects.count(),
+            'total_games': Games.objects.count(),
+            'active_games': Games.objects.filter(is_active=True).count(),
+            'banned_users': Users.objects.filter(is_banned=True).count(),
+            'total_participants': Participant.objects.count(),
+            'open_tickets': SupportTicket.objects.filter(status='open').count(),
+        }
+        
+        recent_games = Games.objects.order_by('-created_at')[:5]
+        recent_users = Users.objects.order_by('-created_at')[:5]
+        
+        return Response({
+            'stats': stats,
+            'recent_games': GameSerializer(recent_games, many=True).data,
+            'recent_users': UserSerializer(recent_users, many=True).data
+        })

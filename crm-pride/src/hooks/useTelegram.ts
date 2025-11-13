@@ -13,22 +13,21 @@ export const useTelegram = () => {
   const [user, setUser] = useState<TelegramUser | null>(null);
   const [webApp, setWebApp] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initData, setInitData] = useState<string | null>(null);
 
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp;
     
     if (tg) {
-      // Инициализация WebApp
       tg.ready();
       tg.expand();
-      
+
       setWebApp(tg);
       setUser(tg.initDataUnsafe.user || null);
-      
-      // Применяем тему Telegram
+      setInitData(tg.initData || null); 
       applyTelegramTheme(tg);
     }
-    
+
     setIsLoading(false);
   }, []);
 
@@ -68,6 +67,7 @@ export const useTelegram = () => {
     // Состояние
     user,
     webApp,
+    initData,
     isLoading,
     
     // Флаги

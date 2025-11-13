@@ -28,20 +28,9 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
-  telegramAuth: (telegramData: any) => {
-    // Правильный формат - распаковываем данные
-    const requestData = {
-      telegram_data: {
-        id: telegramData.id,
-        first_name: telegramData.first_name,
-        last_name: telegramData.last_name || '',
-        username: telegramData.username || '',
-        language_code: telegramData.language_code || 'ru'
-      }
-    };
-    
-    console.log('🔄 Sending auth request:', requestData);
-    return api.post('/auth/telegram/', requestData);
+  telegramInitAuth: (initData: string) => {
+    console.log("📤 Sending initData:", initData.slice(0, 100) + "...");
+    return api.post("/auth/telegram/validate/", { initData });
   },
 };
 

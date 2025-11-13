@@ -21,98 +21,41 @@ const Loader = styled.div`
 `;
 
 const App: React.FC = () => {
-  const { user, isTelegram, webApp, showAlert } = useTelegram();
+  const { user, initData, isTelegram, webApp, showAlert } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      console.log('🔍 App initialization started');
-      console.log('🔍 isTelegram:', isTelegram);
-      console.log('🔍 WebApp:', webApp);
-      console.log('🔍 User:', user);
-      console.log('🔍 URL search:', window.location.search);
+ useEffect(() => {
+  const initializeApp = async () => {
+    console.log("🔍 initData:", initData);
 
+    // Если уже есть токен — просто продолжаем
+    const existingToken = localStorage.getItem("auth_token");
+    if (existingToken) {
+      setLoading(false);
+      return;
+    }
+
+    // Если в Telegram и есть initData — авторизуемся
+    if (isTelegram && initData) {
       try {
-        // 1. ВСЕГДА проверяем токен из URL (и в Mini App, и в браузере)
-        const urlParams = new URLSearchParams(window.location.search);
-        const tokenFromUrl = urlParams.get("token");
-        
-        console.log('🔑 Token from URL:', tokenFromUrl);
+        const response = await authAPI.telegramInitAuth(initData);
+        const token = response.data.token;
 
-        if (tokenFromUrl) {
-          localStorage.setItem("auth_token", tokenFromUrl);
-          console.log("✅ Token from URL saved to localStorage");
-          // Очищаем URL
-          window.history.replaceState({}, "", window.location.pathname);
-          setLoading(false);
-          return;
-        }
-
-        // 2. Проверяем существующий токен
-        const existingToken = localStorage.getItem("auth_token");
-        if (existingToken) {
-          console.log("✅ Using existing token from localStorage");
-          setLoading(false);
-          return;
-        }
-
-        // 3. Если в Telegram Mini App, но нет токена - аутентифицируемся
-        if (isTelegram && user) {
-          console.log("🔐 Starting Telegram authentication...", user);
-
-          const response = await authAPI.telegramAuth({
-            id: user.id,
-            first_name: user.first_name || "",
-            last_name: user.last_name || "",
-            username: user.username || "",
-            language_code: user.language_code || "ru",
-          });
-
-          console.log("🔑 Auth response:", response.data);
-
-          if (response.data.token) {
-            localStorage.setItem("auth_token", response.data.token);
-            console.log("✅ Telegram authentication successful");
-            showAlert("✅ Авторизация успешна!");
-          } else {
-            throw new Error("No token in response");
-          }
-        } else if (isTelegram && !user) {
-          console.log("⏳ Waiting for Telegram user data...");
-          // Пробуем еще раз через секунду
-          setTimeout(() => setLoading(false), 1000);
-          return;
-        } else {
-          console.log("🚫 Not in Telegram - showing public version");
-        }
-
-      } catch (error: any) {
-        console.error("❌ Auth error:", error);
-        
-        let errorMessage = "Неизвестная ошибка авторизации";
-        
-        if (error.response) {
-          errorMessage = error.response.data?.detail || error.response.data?.error || "Ошибка сервера";
-        } else if (error.request) {
-          errorMessage = "Не удалось подключиться к серверу";
-        } else {
-          errorMessage = error.message;
-        }
-        
-        setAuthError(errorMessage);
-        
-        if (isTelegram) {
-          showAlert(`❌ Ошибка авторизации: ${errorMessage}`);
-        }
-      } finally {
-        setLoading(false);
+        localStorage.setItem("auth_token", token);
+        console.log("✅ Telegram auth successful");
+      } catch (err) {
+        console.error("❌ Telegram auth error:", err);
+        showAlert("Ошибка авторизации");
       }
-    };
+    }
 
-    // Даем время на инициализацию
-    setTimeout(initializeApp, 1000);
-  }, [user, isTelegram, webApp, showAlert]);
+    setLoading(false);
+  };
+
+  if (!loading) return;
+  setTimeout(initializeApp, 1000);
+}, [isTelegram, initData, showAlert]);
 
   if (loading) {
     return (
