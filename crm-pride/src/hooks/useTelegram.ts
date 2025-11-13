@@ -10,10 +10,7 @@ export interface TelegramUser {
 }
 
 export const useTelegram = () => {
-  const [user, setUser] = useState<TelegramUser | null>(null);
-  const [webApp, setWebApp] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [initData, setInitData] = useState<string | null>(null);
+  const [initData, setInitData] = useState<string>('');
   const applyTelegramTheme = useCallback((tg: any) => {
     if (tg.themeParams) {
       const root = document.documentElement;
@@ -41,51 +38,14 @@ export const useTelegram = () => {
       }
     }
   }, []);
-  useEffect(() => {
-    const tg = (window as any).Telegram?.WebApp;
-
-    if (tg) {
-      tg.ready();
-      tg.expand();
-
-      setWebApp(tg);
-      setUser(tg.initDataUnsafe.user || null);
-      setInitData(tg.initData || null);
-      applyTelegramTheme(tg);
-    }
-
-    setIsLoading(false);
-  }, [applyTelegramTheme]);
-
-  const closeApp = useCallback(() => {
-    webApp?.close();
-  }, [webApp]);
-
-  const showAlert = useCallback(
-    (message: string) => {
-      if (webApp?.showAlert) {
-        webApp.showAlert(message);
-      } else {
-        // Fallback для браузера
-        alert(message);
-      }
-    },
-    [webApp]
-  );
+   useEffect(() => {
+    // Вызываем signIn при монтировании компонента,
+    // передавая initData из Telegram WebApp API
+     setInitData(window.Telegram.WebApp.initData);
+  }, []);
 
   return {
-    // Состояние
-    user,
-    webApp,
     initData,
-    isLoading,
-
-    // Флаги
-    isTelegram: !!webApp,
-    isAuthenticated: !!user,
-
-    // Методы
-    closeApp,
-    showAlert,
+    applyTelegramTheme
   };
 };

@@ -21,49 +21,44 @@ const Loader = styled.div`
 `;
 
 const App: React.FC = () => {
-  const { initData, isTelegram, showAlert } = useTelegram();
+  const { initData} = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const initializeApp = async () => {
-      console.log("🔍 initData:", initData);
-
-      // Если уже есть токен — просто продолжаем
-      const existingToken = localStorage.getItem("auth_token");
-      if (existingToken) {
-        setLoading(false);
-        return;
-      }
-
-      // Если в Telegram и есть initData — авторизуемся
-      if (isTelegram && initData) {
-        try {
-          const response = await authAPI.telegramInitAuth(initData);
-          const token = response.data.token;
-
-          localStorage.setItem("auth_token", token);
-          console.log("✅ Telegram auth successful");
-        } catch (err: any) {
-          alert(err);
-          setAuthError(err);
-          showAlert("Ошибка авторизации");
-        }
-      }
-
-      setLoading(false);
-    };
-
-    // if (!loading) return;
-    setTimeout(initializeApp, 1000);
-  }, [isTelegram, initData, showAlert]);
+ useEffect(() => {
+     const authenticateAndLoadProfile = async () => {
+       try {
+         if (initData) {
+           console.log("🔄 Authenticating with initData...");
+ 
+           const authResponse = await authAPI.telegramInitAuth(initData);
+           console.log("✅ Auth response:", authResponse.data);
+ 
+           if (authResponse.data.token) {
+             localStorage.setItem("auth_token", authResponse.data.token);
+             console.log("🔑 Token saved");
+ 
+            //  await loadProfile();
+           }
+         } else {
+           throw new Error("No token in response");
+         }
+       } catch (error: any) {
+         console.error("❌ Authentication error:", error);
+         setAuthError(error.response?.data?.error || error.message);
+       } finally {
+         setLoading(false);
+       }
+     };
+     authenticateAndLoadProfile();
+   }, [initData]);
+ 
 
   if (loading) {
     return (
       <Loader>
         <div>⏳ Загрузка Poker CRM...</div>
         <div style={{ fontSize: "14px", color: "#666" }}>
-          {isTelegram ? "Инициализация Telegram..." : "Загрузка..."}
           {initData ? 'авторизация успешна' : 'auth failed'}
         </div>
       </Loader>

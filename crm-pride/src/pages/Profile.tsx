@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
-import { profileAPI } from '../utils/api';
-import { useTelegram } from '../hooks/useTelegram';
+import React, { useEffect, useState } from "react";
+import styled from "styled-components";
+import { authAPI, profileAPI } from "../utils/api";
+import { useTelegram } from "../hooks/useTelegram";
 
 const ProfileContainer = styled.div`
   display: flex;
@@ -30,7 +30,7 @@ const Input = styled.input`
 `;
 
 const Button = styled.button`
-  background: #2196F3;
+  background: #2196f3;
   color: white;
   border: none;
   padding: 12px;
@@ -39,7 +39,7 @@ const Button = styled.button`
   font-size: 16px;
 
   &:hover {
-    background: #1976D2;
+    background: #1976d2;
   }
 `;
 
@@ -77,52 +77,67 @@ const Profile: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
-    nick_name: '',
-    first_name: '',
-    last_name: '',
-    phone_number: '',
-    email: '',
-    date_of_birth: '',
+    nick_name: "",
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+    email: "",
+    date_of_birth: "",
   });
-  const { isTelegram, showAlert } = useTelegram();
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const { initData } = useTelegram();
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-  const token = localStorage.getItem('auth_token');
+    const authenticateAndLoadProfile = async () => {
+      try {
+        if (initData) {
+          console.log("🔄 Authenticating with initData...");
 
-  if (isTelegram && !token) {
-    setIsAuthenticated(false);
-    showAlert(`Требуется авторизация. Перезапустите приложение. ${isAuthenticated}`);
-    return;
-  }
+          const authResponse = await authAPI.telegramInitAuth(initData);
+          console.log("✅ Auth response:", authResponse.data);
 
-  if (token) {
-    loadProfile();
-  }
-}, [isTelegram, showAlert, isAuthenticated]);
+          if (authResponse.data.token) {
+            localStorage.setItem("auth_token", authResponse.data.token);
+            console.log("🔑 Token saved");
 
-  // useEffect(() => {
-   
-  // }, []);
+            await loadProfile();
+          }
+        } else {
+          throw new Error("No token in response");
+        }
+      } catch (error: any) {
+        console.error("❌ Authentication error:", error);
+        setAuthError(error.response?.data?.error || error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    authenticateAndLoadProfile();
+  }, [initData]);
+
 
   const loadProfile = async () => {
-  try {
-    console.log('📡 Запрос профиля...');
-    const response = await profileAPI.getProfile();
-    console.log('✅ Профиль загружен:', response.data);
-    setProfile(response.data);
-    setFormData({
-      nick_name: response.data.user.nick_name || '',
-      first_name: response.data.user.first_name || '',
-      last_name: response.data.user.last_name || '',
-      phone_number: response.data.user.phone_number || '',
-      email: response.data.user.email || '',
-      date_of_birth: response.data.user.date_of_birth || '',
-    });
-  } catch (error: any) {
-    console.error('❌ Ошибка загрузки профиля:', error.response?.data || error);
-  }
-};
+    try {
+      console.log("📡 Запрос профиля...");
+      const response = await profileAPI.getProfile();
+      console.log("✅ Профиль загружен:", response.data);
+      setProfile(response.data);
+      setFormData({
+        nick_name: response.data.user.nick_name || "",
+        first_name: response.data.user.first_name || "",
+        last_name: response.data.user.last_name || "",
+        phone_number: response.data.user.phone_number || "",
+        email: response.data.user.email || "",
+        date_of_birth: response.data.user.date_of_birth || "",
+      });
+    } catch (error: any) {
+      console.error(
+        "❌ Ошибка загрузки профиля:",
+        error.response?.data || error
+      );
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,9 +145,9 @@ const Profile: React.FC = () => {
       await profileAPI.updateProfile(formData);
       await loadProfile();
       setEditing(false);
-      alert('Профиль успешно обновлен!');
+      alert("Профиль успешно обновлен!");
     } catch (error) {
-      alert('Ошибка при обновлении профиля');
+      alert("Ошибка при обновлении профиля");
     }
   };
 
@@ -144,13 +159,25 @@ const Profile: React.FC = () => {
         <h2>👤 Мой профиль</h2>
         <StatsGrid>
           <StatCard>
-            <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#2196F3' }}>
+            <div
+              style={{
+                fontSize: "1.5em",
+                fontWeight: "bold",
+                color: "#2196F3",
+              }}
+            >
               {profile.user.points}
             </div>
             <div>Очков</div>
           </StatCard>
           <StatCard>
-            <div style={{ fontSize: '1.5em', fontWeight: 'bold', color: '#4CAF50' }}>
+            <div
+              style={{
+                fontSize: "1.5em",
+                fontWeight: "bold",
+                color: "#4CAF50",
+              }}
+            >
               {profile.user.total_games_played}
             </div>
             <div>Сыграно игр</div>
@@ -165,34 +192,46 @@ const Profile: React.FC = () => {
             <Input
               placeholder="Никнейм"
               value={formData.nick_name}
-              onChange={(e) => setFormData({...formData, nick_name: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, nick_name: e.target.value })
+              }
             />
             <Input
               placeholder="Имя"
               value={formData.first_name}
-              onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, first_name: e.target.value })
+              }
             />
             <Input
               placeholder="Фамилия"
               value={formData.last_name}
-              onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, last_name: e.target.value })
+              }
             />
             <Input
               placeholder="Телефон"
               value={formData.phone_number}
-              onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, phone_number: e.target.value })
+              }
             />
             <Input
               type="email"
               placeholder="Email"
               value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
             />
             <Input
               type="date"
               placeholder="Дата рождения"
               value={formData.date_of_birth}
-              onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, date_of_birth: e.target.value })
+              }
             />
             <Button type="submit">Сохранить</Button>
             <Button type="button" onClick={() => setEditing(false)}>
@@ -201,12 +240,26 @@ const Profile: React.FC = () => {
           </Form>
         ) : (
           <div>
-            <p><strong>Никнейм:</strong> {profile.user.nick_name || 'Не указан'}</p>
-            <p><strong>Имя:</strong> {profile.user.first_name || 'Не указано'}</p>
-            <p><strong>Фамилия:</strong> {profile.user.last_name || 'Не указана'}</p>
-            <p><strong>Телефон:</strong> {profile.user.phone_number || 'Не указан'}</p>
-            <p><strong>Email:</strong> {profile.user.email || 'Не указан'}</p>
-            <p><strong>Дата рождения:</strong> {profile.user.date_of_birth || 'Не указана'}</p>
+            <p>
+              <strong>Никнейм:</strong> {profile.user.nick_name || "Не указан"}
+            </p>
+            <p>
+              <strong>Имя:</strong> {profile.user.first_name || "Не указано"}
+            </p>
+            <p>
+              <strong>Фамилия:</strong> {profile.user.last_name || "Не указана"}
+            </p>
+            <p>
+              <strong>Телефон:</strong>{" "}
+              {profile.user.phone_number || "Не указан"}
+            </p>
+            <p>
+              <strong>Email:</strong> {profile.user.email || "Не указан"}
+            </p>
+            <p>
+              <strong>Дата рождения:</strong>{" "}
+              {profile.user.date_of_birth || "Не указана"}
+            </p>
             <Button onClick={() => setEditing(true)}>Редактировать</Button>
           </div>
         )}

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
-import { gamesAPI } from '../utils/api';
-import { useTelegram } from '../hooks/useTelegram';
+import React, { useEffect, useState } from "react";
+import styled from "styled-components";
+import { authAPI, gamesAPI } from "../utils/api";
+import { useTelegram } from "../hooks/useTelegram";
 
 const GamesList = styled.div`
   display: flex;
@@ -28,7 +28,7 @@ const GameInfo = styled.p`
 `;
 
 const RegisterButton = styled.button<{ registered: boolean }>`
-  background: ${props => props.registered ? '#4CAF50' : '#2196F3'};
+  background: ${(props) => (props.registered ? "#4CAF50" : "#2196F3")};
   color: white;
   border: none;
   padding: 10px 20px;
@@ -55,37 +55,45 @@ interface Game {
 const Schedule: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
-   const { isTelegram, showAlert } = useTelegram();
+  const { initData } = useTelegram();
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (isTelegram && !token) {
-      setIsAuthenticated(false);
-      showAlert('Требуется авторизация. Перезапустите приложение.');
-    }
-     loadGames();
-  }, [isTelegram, showAlert]);
-
-  if (!isAuthenticated && isTelegram) {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h3>❌ Требуется авторизация</h3>
-        <p>Перезапустите приложение через Telegram бота</p>
-      </div>
-    );
-  }
-
-  // useEffect(() => {
-   
-  // }, []);
+      const authenticateAndLoadProfile = async () => {
+        try {
+          if (initData) {
+            console.log("🔄 Authenticating with initData...");
+  
+            const authResponse = await authAPI.telegramInitAuth(initData);
+            console.log("✅ Auth response:", authResponse.data);
+  
+            if (authResponse.data.token) {
+              localStorage.setItem("auth_token", authResponse.data.token);
+              console.log("🔑 Token saved");
+  
+              await loadGames();
+            }
+          } else {
+            throw new Error("No token in response");
+          }
+        } catch (error: any) {
+          console.error("❌ Authentication error:", error);
+          setAuthError(error.response?.data?.error || error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+      authenticateAndLoadProfile();
+    }, [initData]);
 
   const loadGames = async () => {
     try {
       const response = await gamesAPI.getGames();
       setGames(response.data);
     } catch (error) {
-      console.error('Error loading games:', error);
+      console.error("Error loading games:", error);
     } finally {
       setLoading(false);
     }
@@ -94,10 +102,10 @@ const Schedule: React.FC = () => {
   const handleRegister = async (gameId: number) => {
     try {
       await gamesAPI.registerForGame(gameId);
-      alert('Успешно зарегистрировались на игру!');
+      alert("Успешно зарегистрировались на игру!");
       loadGames(); // Перезагружаем список
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Ошибка регистрации');
+      alert(error.response?.data?.error || "Ошибка регистрации");
     }
   };
 
