@@ -24,41 +24,61 @@ const App: React.FC = () => {
   const { initData } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [token, setToken] = useState(); // для дебага
+  const [token, setToken] = useState(null); // исправлено
 
   useEffect(() => {
     const authenticateAndLoadProfile = async () => {
       try {
-        if (initData) {
-          console.log("🔄 Authenticating with initData...");
-
-          const authResponse = await authAPI.telegramInitAuth(initData);
-          console.log("✅ Auth response:", authResponse.data);
-
-          if (authResponse.data.token) {
-            localStorage.setItem("auth_token", authResponse.data.token);
-            console.log("🔑 Token saved");
-            setToken(authResponse.data);
-          }
-        } else {
-          throw new Error("No token in response", token);
+        if (!initData) {
+          console.log("⏳ Waiting for initData...");
+          return; // Ждем пока initData появится
         }
+
+        console.log("🔄 Authenticating with initData...");
+        console.log("initData:", initData);
+
+        const authResponse = await authAPI.telegramInitAuth(initData);
+        console.log("✅ Auth response:", authResponse);
+
+        // Проверяем наличие токена в ответе
+        if (authResponse.data && authResponse.data.token) {
+          localStorage.setItem("auth_token", authResponse.data.token);
+          console.log("🔑 Token saved:", authResponse.data.token.substring(0, 10) + "...");
+          setToken(authResponse.data.token);
+        } else {
+          throw new Error("No token in response from server");
+        }
+
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
-        setAuthError(error.response?.data?.error || error.message);
+        setAuthError(error.response?.data?.error || error.message || "Unknown error");
       } finally {
         setLoading(false);
       }
     };
+
     authenticateAndLoadProfile();
   }, [initData]);
+
+  // Добавляем таймаут для initData
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading && !initData) {
+        console.warn("InitData timeout - proceeding without Telegram auth");
+        setAuthError("Telegram authentication timeout");
+        setLoading(false);
+      }
+    }, 5000); // 5 секунд таймаут
+
+    return () => clearTimeout(timeout);
+  }, [loading, initData]);
 
   if (loading) {
     return (
       <Loader>
         <div>⏳ Загрузка Poker CRM...</div>
         <div style={{ fontSize: "14px", color: "#666" }}>
-          {initData ? "авторизация успешна" : "auth failed"}
+          {initData ? "Инициализация Telegram..." : "Ожидание данных Telegram..."}
         </div>
       </Loader>
     );
