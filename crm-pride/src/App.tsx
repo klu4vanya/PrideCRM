@@ -69,8 +69,8 @@ const App: React.FC = () => {
     return (
       <Loader>
         <div style={{ textAlign: "center", padding: "20px" }}>
-          <h2>❌ Ошибка авторизации</h2>
-          <p>{authError}</p>
+          <h2 style={{color: '#fff'}}>❌ Ошибка авторизации</h2>
+          <p style={{color: '#fff'}} >{authError}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
