@@ -44,8 +44,9 @@ const App: React.FC = () => {
 
         localStorage.setItem("auth_token", token);
         console.log("✅ Telegram auth successful");
-      } catch (err) {
+      } catch (err: any) {
         console.error("❌ Telegram auth error:", err);
+        setAuthError(err)
         showAlert("Ошибка авторизации");
       }
     }
