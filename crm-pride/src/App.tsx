@@ -21,42 +21,42 @@ const Loader = styled.div`
 `;
 
 const App: React.FC = () => {
-  const { user, initData, isTelegram, webApp, showAlert } = useTelegram();
+  const { initData, isTelegram, showAlert } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
- useEffect(() => {
-  const initializeApp = async () => {
-    console.log("🔍 initData:", initData);
+  useEffect(() => {
+    const initializeApp = async () => {
+      console.log("🔍 initData:", initData);
 
-    // Если уже есть токен — просто продолжаем
-    const existingToken = localStorage.getItem("auth_token");
-    if (existingToken) {
-      setLoading(false);
-      return;
-    }
-
-    // Если в Telegram и есть initData — авторизуемся
-    if (isTelegram && initData) {
-      try {
-        const response = await authAPI.telegramInitAuth(initData);
-        const token = response.data.token;
-
-        localStorage.setItem("auth_token", token);
-        console.log("✅ Telegram auth successful");
-      } catch (err: any) {
-        console.error("❌ Telegram auth error:", err);
-        setAuthError(err)
-        showAlert("Ошибка авторизации");
+      // Если уже есть токен — просто продолжаем
+      const existingToken = localStorage.getItem("auth_token");
+      if (existingToken) {
+        setLoading(false);
+        return;
       }
-    }
 
-    setLoading(false);
-  };
+      // Если в Telegram и есть initData — авторизуемся
+      if (isTelegram && initData) {
+        try {
+          const response = await authAPI.telegramInitAuth(initData);
+          const token = response.data.token;
 
-  if (!loading) return;
-  setTimeout(initializeApp, 1000);
-}, [isTelegram, initData, showAlert]);
+          localStorage.setItem("auth_token", token);
+          console.log("✅ Telegram auth successful");
+        } catch (err: any) {
+          console.error("❌ Telegram auth error:", err);
+          setAuthError(err);
+          showAlert("Ошибка авторизации");
+        }
+      }
+
+      setLoading(false);
+    };
+
+    if (!loading) return;
+    setTimeout(initializeApp, 1000);
+  }, [isTelegram, initData, showAlert, loading]);
 
   if (loading) {
     return (
@@ -75,7 +75,7 @@ const App: React.FC = () => {
         <div style={{ textAlign: "center", padding: "20px" }}>
           <h2>❌ Ошибка авторизации</h2>
           <p>{authError}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             style={{
               background: "#2196f3",
@@ -84,7 +84,7 @@ const App: React.FC = () => {
               padding: "12px 24px",
               borderRadius: "8px",
               cursor: "pointer",
-              marginTop: "15px"
+              marginTop: "15px",
             }}
           >
             Попробовать снова
