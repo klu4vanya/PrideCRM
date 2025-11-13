@@ -99,7 +99,7 @@ const Profile: React.FC = () => {
   if (token) {
     loadProfile();
   }
-}, [isTelegram, showAlert]);
+}, [isTelegram, showAlert, isAuthenticated]);
 
   // useEffect(() => {
    
