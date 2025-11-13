@@ -84,47 +84,45 @@ const Profile: React.FC = () => {
     email: '',
     date_of_birth: '',
   });
-   const { isTelegram, showAlert } = useTelegram();
+  const {initData, isTelegram, showAlert } = useTelegram();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (isTelegram && !token) {
-      setIsAuthenticated(false);
-      showAlert('Требуется авторизация. Перезапустите приложение.');
-    }
-     loadProfile();
-  }, [isTelegram, showAlert]);
+  const token = localStorage.getItem('auth_token');
 
-  if (!isAuthenticated && isTelegram) {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h3>❌ Требуется авторизация</h3>
-        <p>Перезапустите приложение через Telegram бота</p>
-      </div>
-    );
+  if (isTelegram && !token) {
+    setIsAuthenticated(false);
+    showAlert('Требуется авторизация. Перезапустите приложение.');
+    return;
   }
+
+  if (token) {
+    loadProfile();
+  }
+}, [isTelegram, showAlert]);
 
   // useEffect(() => {
    
   // }, []);
 
   const loadProfile = async () => {
-    try {
-      const response = await profileAPI.getProfile();
-      setProfile(response.data);
-      setFormData({
-        nick_name: response.data.user.nick_name || '',
-        first_name: response.data.user.first_name || '',
-        last_name: response.data.user.last_name || '',
-        phone_number: response.data.user.phone_number || '',
-        email: response.data.user.email || '',
-        date_of_birth: response.data.user.date_of_birth || '',
-      });
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    }
-  };
+  try {
+    console.log('📡 Запрос профиля...');
+    const response = await profileAPI.getProfile();
+    console.log('✅ Профиль загружен:', response.data);
+    setProfile(response.data);
+    setFormData({
+      nick_name: response.data.user.nick_name || '',
+      first_name: response.data.user.first_name || '',
+      last_name: response.data.user.last_name || '',
+      phone_number: response.data.user.phone_number || '',
+      email: response.data.user.email || '',
+      date_of_birth: response.data.user.date_of_birth || '',
+    });
+  } catch (error: any) {
+    console.error('❌ Ошибка загрузки профиля:', error.response?.data || error);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
