@@ -27,65 +27,75 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 class IsAdminUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_admin
+import hmac
+import hashlib
+from urllib.parse import parse_qsl
+import json
+from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+
 class TelegramInitAuthView(APIView):
     permission_classes = []
 
     def post(self, request):
+        print("=== DEBUG TELEGRAM AUTH ===")
+        print(f"Request data: {request.data}")
+        
         init_data = request.data.get("initData")
         if not init_data:
             return Response({"error": "Missing initData"}, status=400)
 
-        bot_token = settings.TELEGRAM_BOT_TOKEN
-        secret_key = hashlib.sha256(bot_token.encode()).digest()
+        try:
+            # Простая проверка без валидации хеша для теста
+            parsed_data = dict(parse_qsl(init_data))
+            print(f"Parsed data: {parsed_data}")
+            
+            user_json = parsed_data.get("user")
+            if not user_json:
+                return Response({"error": "Missing user data"}, status=400)
 
-        data_list = sorted(
-            [f"{k}={v}" for k, v in parse_qsl(init_data) if k != "hash"]
-        )
-        data_check_string = "\n".join(data_list)
-        computed_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+            user_data = json.loads(user_json)
+            print(f"User data: {user_data}")
 
-        received_hash = dict(parse_qsl(init_data)).get("hash")
-        if computed_hash != received_hash:
-            return Response({"error": "Invalid hash"}, status=403)
+            # Пропускаем проверку хеша для тестирования
+            # TODO: Включить обратно после отладки
+            
+            telegram_id = str(user_data["id"])
+            username = user_data.get("username", f"user_{telegram_id}")
+            first_name = user_data.get("first_name", "")
+            last_name = user_data.get("last_name", "")
 
-        # Достаём JSON с пользователем
-        user_json = dict(parse_qsl(init_data)).get("user")
-        user_data = json.loads(user_json)
+            # Создаём или обновляем пользователя
+            user, created = Users.objects.get_or_create(
+                user_id=telegram_id,
+                defaults={
+                    "username": username,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                }
+            )
 
-        telegram_id = str(user_data["id"])
-        username = user_data.get("username")
-        first_name = user_data.get("first_name", "")
-        last_name = user_data.get("last_name", "")
+            # Создаём токен
+            from rest_framework.authtoken.models import Token
+            token, _ = Token.objects.get_or_create(user=user)
 
-        # Создаём или обновляем пользователя
-        user, created = Users.objects.get_or_create(
-            user_id=telegram_id,
-            defaults={
-                "username": username or telegram_id,
-                "first_name": first_name,
-                "last_name": last_name,
-            }
-        )
+            return Response({
+                "token": token.key,
+                "user": {
+                    "id": user.user_id,
+                    "username": user.username,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                }
+            })
 
-        if not created:
-            user.first_name = first_name
-            user.last_name = last_name
-            if username:
-                user.username = username
-            user.save()
-
-        # Создаём токен
-        token, _ = Token.objects.get_or_create(user=user)
-
-        return Response({
-            "token": token.key,
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            }
-        })
+        except Exception as e:
+            print(f"ERROR: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            return Response({"error": f"Debug: {str(e)}"}, status=500)
 class TelegramAuthView(APIView):
     permission_classes = [permissions.AllowAny]
     

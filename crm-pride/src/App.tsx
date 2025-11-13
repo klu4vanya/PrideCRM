@@ -21,45 +21,45 @@ const Loader = styled.div`
 `;
 
 const App: React.FC = () => {
-  const { initData} = useTelegram();
+  const { initData } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [token, setToken] = useState(); // для дебага
 
- useEffect(() => {
-     const authenticateAndLoadProfile = async () => {
-       try {
-         if (initData) {
-           console.log("🔄 Authenticating with initData...");
- 
-           const authResponse = await authAPI.telegramInitAuth(initData);
-           console.log("✅ Auth response:", authResponse.data);
- 
-           if (authResponse.data.token) {
-             localStorage.setItem("auth_token", authResponse.data.token);
-             console.log("🔑 Token saved");
- 
+  useEffect(() => {
+    const authenticateAndLoadProfile = async () => {
+      try {
+        if (initData) {
+          console.log("🔄 Authenticating with initData...");
+
+          const authResponse = await authAPI.telegramInitAuth(initData);
+          console.log("✅ Auth response:", authResponse.data);
+
+          if (authResponse.data.token) {
+            localStorage.setItem("auth_token", authResponse.data.token);
+            console.log("🔑 Token saved");
+            setToken(authResponse.data.token);
             //  await loadProfile();
-           }
-         } else {
-           throw new Error("No token in response");
-         }
-       } catch (error: any) {
-         console.error("❌ Authentication error:", error);
-         setAuthError(error.response?.data?.error || error.message);
-       } finally {
-         setLoading(false);
-       }
-     };
-     authenticateAndLoadProfile();
-   }, [initData]);
- 
+          }
+        } else {
+          throw new Error("No token in response", token);
+        }
+      } catch (error: any) {
+        console.error("❌ Authentication error:", error);
+        setAuthError(error.response?.data?.error || error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    authenticateAndLoadProfile();
+  }, [initData]);
 
   if (loading) {
     return (
       <Loader>
         <div>⏳ Загрузка Poker CRM...</div>
         <div style={{ fontSize: "14px", color: "#666" }}>
-          {initData ? 'авторизация успешна' : 'auth failed'}
+          {initData ? "авторизация успешна" : "auth failed"}
         </div>
       </Loader>
     );
@@ -69,8 +69,8 @@ const App: React.FC = () => {
     return (
       <Loader>
         <div style={{ textAlign: "center", padding: "20px" }}>
-          <h2 style={{color: '#fff'}}>❌ Ошибка авторизации</h2>
-          <p style={{color: '#fff'}} >{authError}</p>
+          <h2 style={{ color: "#fff" }}>❌ Ошибка авторизации</h2>
+          <p style={{ color: "#fff" }}>{authError}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
