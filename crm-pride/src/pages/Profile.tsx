@@ -84,7 +84,7 @@ const Profile: React.FC = () => {
     email: '',
     date_of_birth: '',
   });
-  const {initData, isTelegram, showAlert } = useTelegram();
+  const { isTelegram, showAlert } = useTelegram();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ const Profile: React.FC = () => {
 
   if (isTelegram && !token) {
     setIsAuthenticated(false);
-    showAlert('Требуется авторизация. Перезапустите приложение.');
+    showAlert(`Требуется авторизация. Перезапустите приложение. ${isAuthenticated}`);
     return;
   }
 
