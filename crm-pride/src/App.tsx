@@ -21,64 +21,79 @@ const Loader = styled.div`
 `;
 
 const App: React.FC = () => {
-  const { initData } = useTelegram();
+  const { initData, isReady } = useTelegram(); // Добавлен isReady
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [token, setToken] = useState(null); // исправлено
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const authenticateAndLoadProfile = async () => {
+      // Ждем пока Telegram инициализируется
+      if (!isReady) {
+        console.log("⏳ Waiting for Telegram initialization...");
+        return;
+      }
+
       try {
         if (!initData) {
-          console.log("⏳ Waiting for initData...");
-          return; // Ждем пока initData появится
+          console.warn("⚠️ No initData available");
+          // На мобильных initData может быть пустым, но приложение должно работать
+          setLoading(false);
+          return;
         }
 
         console.log("🔄 Authenticating with initData...");
-        console.log("initData:", initData);
+        console.log("initData length:", initData.length);
 
         const authResponse = await authAPI.telegramInitAuth(initData);
-        console.log("✅ Auth response:", authResponse);
+        console.log("✅ Auth response received");
 
-        // Проверяем наличие токена в ответе
         if (authResponse.data && authResponse.data.token) {
           localStorage.setItem("auth_token", authResponse.data.token);
-          console.log("🔑 Token saved:", authResponse.data.token.substring(0, 10) + "...");
-          setToken(authResponse.data.token);
+          console.log("🔑 Token saved successfully");
+          setLoading(false);
         } else {
           throw new Error("No token in response from server");
         }
 
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
+        
+        // Для network errors пробуем ретрай
+        if (error.message.includes('Network') && retryCount < 3) {
+          console.log(`🔄 Retrying authentication (${retryCount + 1}/3)`);
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 1000 * (retryCount + 1));
+          return;
+        }
+        
         setAuthError(error.response?.data?.error || error.message || "Unknown error");
-      } finally {
         setLoading(false);
       }
     };
 
     authenticateAndLoadProfile();
-  }, [initData]);
+  }, [initData, isReady, retryCount]);
 
-  // Добавляем таймаут для initData
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading && !initData) {
-        console.warn("InitData timeout - proceeding without Telegram auth");
-        setAuthError("Telegram authentication timeout");
-        setLoading(false);
-      }
-    }, 5000); // 5 секунд таймаут
-
-    return () => clearTimeout(timeout);
-  }, [loading, initData]);
+  // Если Telegram не готов, показываем загрузку
+  if (!isReady) {
+    return (
+      <Loader>
+        <div>⏳ Инициализация Telegram...</div>
+        <div style={{ fontSize: "14px", color: "#666" }}>
+          Подготовка приложения
+        </div>
+      </Loader>
+    );
+  }
 
   if (loading) {
     return (
       <Loader>
         <div>⏳ Загрузка Poker CRM...</div>
         <div style={{ fontSize: "14px", color: "#666" }}>
-          {initData ? "Инициализация Telegram..." : "Ожидание данных Telegram..."}
+          {initData ? `Аутентификация... ${retryCount > 0 ? `(Попытка ${retryCount})` : ''}` : "Режим без аутентификации"}
         </div>
       </Loader>
     );
@@ -88,22 +103,42 @@ const App: React.FC = () => {
     return (
       <Loader>
         <div style={{ textAlign: "center", padding: "20px" }}>
-          <h2 style={{ color: "#fff" }}>❌ Ошибка авторизации</h2>
+          <h2 style={{ color: "#fff" }}>❌ Ошибка</h2>
           <p style={{ color: "#fff" }}>{authError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: "#2196f3",
-              color: "white",
-              border: "none",
-              padding: "12px 24px",
-              borderRadius: "8px",
-              cursor: "pointer",
-              marginTop: "15px",
-            }}
-          >
-            Попробовать снова
-          </button>
+          <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: "#2196f3",
+                color: "white",
+                border: "none",
+                padding: "12px 24px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                marginTop: "15px",
+              }}
+            >
+              Обновить
+            </button>
+            <button
+              onClick={() => {
+                setAuthError(null);
+                setLoading(true);
+                setRetryCount(0);
+              }}
+              style={{
+                background: "#666",
+                color: "white",
+                border: "none",
+                padding: "12px 24px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                marginTop: "15px",
+              }}
+            >
+              Попробовать снова
+            </button>
+          </div>
         </div>
       </Loader>
     );
