@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import styled from "styled-components";
 import { useTelegram } from "./hooks/useTelegram";
 import { authAPI } from "./utils/api";
+
 import Layout from "./components/Layout";
 import Schedule from "./pages/Schedule";
 import Rating from "./pages/Rating";
@@ -18,97 +19,131 @@ const Loader = styled.div`
   height: 100vh;
   font-size: 18px;
   gap: 15px;
+  color: white;
+  background: black;
 `;
 
 const App: React.FC = () => {
-  const { initData } = useTelegram();
-  const [loading, setLoading] = useState(true);
+  const { initData, isTelegram, isReady } = useTelegram();
+
   const [authError, setAuthError] = useState<string | null>(null);
-  const [token, setToken] = useState(null); // исправлено
+  const [loading, setLoading] = useState(true);
 
+  // ======================================================
+  // 🔐 АВТОРИЗАЦИЯ ЧЕРЕЗ initData (Mini App)
+  // ======================================================
   useEffect(() => {
-    const authenticateAndLoadProfile = async () => {
+    const runAuth = async () => {
       try {
-        if (!initData) {
-          console.log("⏳ Waiting for initData...");
-          return; // Ждем пока initData появится
+        // 1. Если Telegram ещё НЕ готов — ждать
+        if (isTelegram && !isReady) {
+          console.log("⏳ Waiting for Telegram WebApp...");
+          return;
         }
 
-        console.log("🔄 Authenticating with initData...");
-        console.log("initData:", initData);
+        // 2. Проверка токена из URL
+        const params = new URLSearchParams(window.location.search);
+        const tokenFromUrl = params.get("token");
 
-        const authResponse = await authAPI.telegramInitAuth(initData);
-        console.log("✅ Auth response:", authResponse);
-
-        // Проверяем наличие токена в ответе
-        if (authResponse.data && authResponse.data.token) {
-          localStorage.setItem("auth_token", authResponse.data.token);
-          console.log("🔑 Token saved:", authResponse.data.token.substring(0, 10) + "...");
-          setToken(authResponse.data.token);
-        } else {
-          throw new Error("No token in response from server");
+        if (tokenFromUrl) {
+          console.log("🔑 Token from URL:", tokenFromUrl);
+          localStorage.setItem("auth_token", tokenFromUrl);
+          window.history.replaceState({}, "", window.location.pathname);
+          setLoading(false);
+          return;
         }
 
-      } catch (error: any) {
-        console.error("❌ Authentication error:", error);
-        setAuthError(error.response?.data?.error || error.message || "Unknown error");
-      } finally {
+        // 3. Если токен уже есть
+        const existing = localStorage.getItem("auth_token");
+        if (existing) {
+          console.log("🔐 Using saved token");
+          setLoading(false);
+          return;
+        }
+
+        // 4. Авторизация через initData
+        if (isTelegram) {
+          console.log("📡 Authenticating with initData:", initData);
+
+          if (!initData)
+            throw new Error(
+              "initData is empty — Telegram did not provide auth payload"
+            );
+
+          const response = await authAPI.telegramInitAuth(initData);
+
+          if (!response.data?.token) {
+            throw new Error("No token in API response");
+          }
+
+          console.log(
+            "🔑 Token saved:",
+            response.data.token.substring(0, 10) + "…"
+          );
+          localStorage.setItem("auth_token", response.data.token);
+          setLoading(false);
+          return;
+        }
+
+        // 5. Если не Telegram — просто загрузить сайт
+        console.log("🌍 Running as normal website");
+        setLoading(false);
+      } catch (err: any) {
+        console.error("❌ Auth error:", err);
+        setAuthError(
+          err.response?.data?.error || err.message || "Unknown error"
+        );
         setLoading(false);
       }
     };
 
-    authenticateAndLoadProfile();
-  }, [initData]);
+    runAuth();
+  }, [initData, isReady, isTelegram]);
 
-  // Добавляем таймаут для initData
-  // useEffect(() => {
-  //   const timeout = setTimeout(() => {
-  //     if (loading && !initData) {
-  //       console.warn("InitData timeout - proceeding without Telegram auth");
-  //       setAuthError("Telegram authentication timeout");
-  //       setLoading(false);
-  //     }
-  //   }, 5000); // 5 секунд таймаут
-
-  //   return () => clearTimeout(timeout);
-  // }, [loading, initData]);
-
+  // ======================================================
+  // LOADING
+  // ======================================================
   if (loading) {
     return (
       <Loader>
-        <div>⏳ Загрузка Poker CRM...</div>
-        <div style={{ fontSize: "14px", color: "#666" }}>
-          {initData ? "Инициализация Telegram..." : "Ожидание данных Telegram..."}
+        <div>⏳ Загрузка...</div>
+        <div style={{ fontSize: 14, opacity: 0.7 }}>
+          {isTelegram ? "Ожидание Telegram WebApp…" : "Ожидание…"}
         </div>
       </Loader>
     );
   }
 
+  // ======================================================
+  // ERROR
+  // ======================================================
   if (authError) {
     return (
       <Loader>
-        <div style={{ textAlign: "center", padding: "20px" }}>
-          <h2 style={{ color: "#fff" }}>❌ Ошибка авторизации</h2>
-          <p style={{ color: "#fff" }}>{authError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: "#2196f3",
-              color: "white",
-              border: "none",
-              padding: "12px 24px",
-              borderRadius: "8px",
-              cursor: "pointer",
-              marginTop: "15px",
-            }}
-          >
-            Попробовать снова
-          </button>
-        </div>
+        <h2>❌ Ошибка авторизации</h2>
+        <p>{authError}</p>
+
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            marginTop: 12,
+            padding: "10px 18px",
+            borderRadius: 8,
+            background: "#2196F3",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Перезапустить
+        </button>
       </Loader>
     );
   }
 
+  // ======================================================
+  // APP CONTENT
+  // ======================================================
   return (
     <Router>
       <Layout>
