@@ -41,9 +41,14 @@ export const useTelegram = () => {
   }, []);
 
   useEffect(() => {
-    // Вызываем signIn при монтировании компонента,
-    // передавая initData из Telegram WebApp API
-    setInitData(window.Telegram.WebApp.initData);
+    const tg = window.Telegram.WebApp;
+  
+    if (!tg) return;
+  
+    tg.ready();    // must call
+    tg.expand();   // must call
+  
+    setInitData(tg.initData);
   }, []);
 
   return {
