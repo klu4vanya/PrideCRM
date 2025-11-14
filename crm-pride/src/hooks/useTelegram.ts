@@ -48,6 +48,5 @@ export const useTelegram = () => {
 
   return {
     initData,
-    applyTelegramTheme,
   };
 };
