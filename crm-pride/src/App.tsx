@@ -61,17 +61,17 @@ const App: React.FC = () => {
   }, [initData]);
 
   // Добавляем таймаут для initData
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading && !initData) {
-        console.warn("InitData timeout - proceeding without Telegram auth");
-        setAuthError("Telegram authentication timeout");
-        setLoading(false);
-      }
-    }, 5000); // 5 секунд таймаут
+  // useEffect(() => {
+  //   const timeout = setTimeout(() => {
+  //     if (loading && !initData) {
+  //       console.warn("InitData timeout - proceeding without Telegram auth");
+  //       setAuthError("Telegram authentication timeout");
+  //       setLoading(false);
+  //     }
+  //   }, 5000); // 5 секунд таймаут
 
-    return () => clearTimeout(timeout);
-  }, [loading, initData]);
+  //   return () => clearTimeout(timeout);
+  // }, [loading, initData]);
 
   if (loading) {
     return (
