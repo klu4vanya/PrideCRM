@@ -21,7 +21,7 @@ const Loader = styled.div`
 `;
 
 const App: React.FC = () => {
-  const { initData, isReady } = useTelegram();
+  const { initData } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [token, setToken] = useState(null); // исправлено
