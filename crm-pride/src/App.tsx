@@ -37,7 +37,6 @@ const App: React.FC = () => {
       try {
         // 1. Если Telegram ещё НЕ готов — ждать
         if (isTelegram && !isReady) {
-          console.log("⏳ Waiting for Telegram WebApp...");
           return;
         }
 
@@ -46,7 +45,6 @@ const App: React.FC = () => {
         const tokenFromUrl = params.get("token");
 
         if (tokenFromUrl) {
-          console.log("🔑 Token from URL:", tokenFromUrl);
           localStorage.setItem("auth_token", tokenFromUrl);
           window.history.replaceState({}, "", window.location.pathname);
           setLoading(false);
@@ -56,15 +54,12 @@ const App: React.FC = () => {
         // 3. Если токен уже есть
         const existing = localStorage.getItem("auth_token");
         if (existing) {
-          console.log("🔐 Using saved token");
           setLoading(false);
           return;
         }
 
         // 4. Авторизация через initData
         if (isTelegram) {
-          console.log("📡 Authenticating with initData:", initData);
-
           if (!initData)
             throw new Error(
               "initData is empty — Telegram did not provide auth payload"
@@ -76,20 +71,14 @@ const App: React.FC = () => {
             throw new Error("No token in API response");
           }
 
-          console.log(
-            "🔑 Token saved:",
-            response.data.token.substring(0, 10) + "…"
-          );
           localStorage.setItem("auth_token", response.data.token);
           setLoading(false);
           return;
         }
 
         // 5. Если не Telegram — просто загрузить сайт
-        console.log("🌍 Running as normal website");
         setLoading(false);
       } catch (err: any) {
-        console.error("❌ Auth error:", err);
         setAuthError(
           err.response?.data?.error || err.message || "Unknown error"
         );

@@ -92,24 +92,17 @@ const Profile: React.FC = () => {
     const authenticateAndLoadProfile = async () => {
       try {
         if (initData) {
-          console.log("🔄 Authenticating with initData...");
-
           const authResponse = await authAPI.telegramInitAuth(initData);
-          console.log("✅ Auth response:", authResponse.data);
 
           if (authResponse.data.token) {
             localStorage.setItem("auth_token", authResponse.data.token);
-            console.log("🔑 Token saved");
-
             await loadProfile();
           }
         } else {
           throw new Error("No token in response");
         }
       } catch (error: any) {
-        console.error("❌ Authentication error:", error);
         setAuthError(error.response?.data?.error || error.message);
-        console.log(authError)
       } finally {
         setLoading(false);
       }
@@ -120,9 +113,7 @@ const Profile: React.FC = () => {
 
   const loadProfile = async () => {
     try {
-      console.log("📡 Запрос профиля...");
       const response = await profileAPI.getProfile();
-      console.log("✅ Профиль загружен:", response.data);
       setProfile(response.data);
       setFormData({
         nick_name: response.data.user.nick_name || "",
@@ -133,10 +124,6 @@ const Profile: React.FC = () => {
         date_of_birth: response.data.user.date_of_birth || "",
       });
     } catch (error: any) {
-      console.error(
-        "❌ Ошибка загрузки профиля:",
-        error.response?.data || error
-      );
     }
   };
 
