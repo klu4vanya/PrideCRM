@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, HashRouter } from "react-router-dom";
+import {  Routes, Route, HashRouter } from "react-router-dom";
 import styled from "styled-components";
 import { useTelegram } from "./hooks/useTelegram";
 import { authAPI } from "./utils/api";
@@ -40,17 +40,6 @@ const App: React.FC = () => {
           return;
         }
 
-        // 2. Проверка токена из URL
-        const params = new URLSearchParams(window.location.search);
-        const tokenFromUrl = params.get("token");
-
-        if (tokenFromUrl) {
-          localStorage.setItem("auth_token", tokenFromUrl);
-          window.history.replaceState({}, "", window.location.pathname);
-          setLoading(false);
-          return;
-        }
-
         // 3. Если токен уже есть
         const existing = localStorage.getItem("auth_token");
         if (existing) {
@@ -71,7 +60,13 @@ const App: React.FC = () => {
             throw new Error("No token in API response");
           }
 
-          localStorage.setItem("auth_token", response.data.token);
+          setTimeout(() => {
+            try {
+              localStorage.setItem("auth_token", response.data.token);
+            } catch (e) {
+              console.warn("localStorage error:", e);
+            }
+          }, 300); 
           setLoading(false);
           return;
         }

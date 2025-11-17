@@ -10,8 +10,11 @@ export const useTelegram = () => {
 
     if (!tg) return;
 
-    // важно: ready() вызываем ДО setWebApp
-    tg.ready();
+    if (!tg.initData || tg.initData.length === 0) {
+      console.log("⏳ Telegram WebApp not ready yet...");
+    } else {
+      tg.ready();
+    }
 
     setWebApp(tg);
 
