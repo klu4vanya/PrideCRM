@@ -387,10 +387,16 @@ class SupportTicketViewSet(viewsets.ModelViewSet):
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    
     def get(self, request):
+        return Response({
+            'user': {"dfghdfgh": 3},
+            'upcoming_games': {}
+        })
         user = request.user
         user_data = UserSerializer(user).data
+        l = logging.Logger("arsfg")
+        l.warning("=== TELEGRAM PROFILE DEBUG ===")
+        l.warning(f"Request data: {user_data}")
         
         # Получаем ближайшие игры, на которые зарегистрирован пользователь
         upcoming_participations = Participant.objects.filter(

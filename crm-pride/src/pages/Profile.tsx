@@ -124,6 +124,7 @@ const Profile: React.FC = () => {
         date_of_birth: response.data.user.date_of_birth || "",
       });
     } catch (error: any) {
+      <div>{error}</div>
     }
   };
 
