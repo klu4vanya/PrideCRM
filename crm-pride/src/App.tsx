@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, HashRouter } from "react-router-dom";
 import styled from "styled-components";
 import { useTelegram } from "./hooks/useTelegram";
 import { authAPI } from "./utils/api";
@@ -145,7 +145,7 @@ const App: React.FC = () => {
   // APP CONTENT
   // ======================================================
   return (
-    <Router>
+    <HashRouter>
       <Layout>
         <Routes>
           <Route path="/" element={<Schedule />} />
@@ -155,7 +155,7 @@ const App: React.FC = () => {
           <Route path="/support" element={<Support />} />
         </Routes>
       </Layout>
-    </Router>
+    </HashRouter>
   );
 };
 

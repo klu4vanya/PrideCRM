@@ -8,8 +8,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-MINI_APP_URL = "https://pride-crm.vercel.app"
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api")
+MINI_APP_URL = "https://pride-crm.vercel.app/"
+API_BASE_URL = os.getenv("API_BASE_URL", "https://preeminent-karisa-nonministerially.ngrok-free.dev/api")
 
 if not BOT_TOKEN:
     raise ValueError("❌ TELEGRAM_BOT_TOKEN not set in .env")
@@ -33,11 +33,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             json={"telegram_data": telegram_data}
         )
         token = response.json()['token']
-        mini_app_url = f"https://pride-crm.vercel.app"
-
-        await update.message.reply_text(
-            f"токен {token}" 
-        )
+        mini_app_url = f"https://pride-crm.vercel.app/"
         
         if response.status_code == 200:
             # Показываем кнопку для открытия Mini App
