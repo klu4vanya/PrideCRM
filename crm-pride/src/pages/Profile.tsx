@@ -93,7 +93,7 @@ const Profile: React.FC = () => {
       try {
         if (initData) {
           const authResponse = await authAPI.telegramInitAuth(initData);
-
+          <div>{initData}</div>
           if (authResponse.data.token) {
             localStorage.setItem("auth_token", authResponse.data.token);
             await loadProfile();
