@@ -116,6 +116,7 @@ const Profile: React.FC = () => {
     try {
       const response = await profileAPI.getProfile();
       setProfile(response.data);
+      console.log("Данные по пользователю", profile)
       setFormData({
         nick_name: response.data.user.nick_name || "",
         first_name: response.data.user.first_name || "",
@@ -125,6 +126,7 @@ const Profile: React.FC = () => {
         date_of_birth: response.data.user.date_of_birth || "",
         points: response.data.user.points || ""
       });
+      console.log("form data:", formData)
     } catch (error: any) {
       <div>{error}</div>
     }
