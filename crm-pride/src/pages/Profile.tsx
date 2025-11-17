@@ -96,7 +96,7 @@ const Profile: React.FC = () => {
 
           if (authResponse.data.token) {
             localStorage.setItem("auth_token", authResponse.data.token);
-            loadProfile();
+            await loadProfile();
           }
         } else {
           throw new Error("No token in response");
@@ -139,7 +139,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  if (!profile) return <div>Загрузить профиль не удалось</div>;
+  if (!profile) return <div>{profile}</div>;
   if (loading) return <div>Загрузка...</div>;
 
   return (
