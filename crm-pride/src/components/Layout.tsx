@@ -11,12 +11,14 @@ const Container = styled.div`
 const Nav = styled.nav`
   display: flex;
   justify-content: space-around;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  /* background: rgba(255, 255, 255, 0.1); */
+  /* backdrop-filter: blur(10px); */
   border-radius: 25px;
   padding: 12px;
   margin-bottom: 20px;
+  background: transparent;   // временно
 `;
+
 
 const NavButton = styled.button<{ active: boolean }>`
   background: ${props => props.active ? 'rgba(255, 255, 255, 0.2)' : 'transparent'};
@@ -34,11 +36,14 @@ const NavButton = styled.button<{ active: boolean }>`
 `;
 
 const Content = styled.div`
-  background: rgba(255, 255, 255, 0.95);
+  /* background: rgba(255, 255, 255, 0.95); */
+  /* backdrop-filter: blur(10px); */
+  background: white;  // временно
   border-radius: 20px;
   padding: 20px;
   min-height: 400px;
 `;
+
 
 interface LayoutProps {
   children: React.ReactNode;
