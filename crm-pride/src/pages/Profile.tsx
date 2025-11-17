@@ -96,7 +96,7 @@ const Profile: React.FC = () => {
 
           if (authResponse.data.token) {
             localStorage.setItem("auth_token", authResponse.data.token);
-            await loadProfile();
+            loadProfile();
           }
         } else {
           throw new Error("No token in response");
