@@ -7,6 +7,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  config.headers["ngrok-skip-browser-warning"] = "true";
   const token = localStorage.getItem('auth_token');
   console.log('🔐 API Request - Token:', token ? 'YES' : 'NO');
   if (token) {
