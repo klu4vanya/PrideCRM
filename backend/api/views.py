@@ -388,10 +388,6 @@ class SupportTicketViewSet(viewsets.ModelViewSet):
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        return Response({
-            'user': {"dfghdfgh": 3},
-            'upcoming_games': {}
-        })
         user = request.user
         user_data = UserSerializer(user).data
         l = logging.Logger("arsfg")
