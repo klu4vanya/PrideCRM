@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://preeminent-karisa-nonministerially.ngrok-free.dev/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '77.95.201.169/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
