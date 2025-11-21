@@ -76,9 +76,9 @@ MIDDLEWARE = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
-    "https://pridepokerclub.ru",
     "https://*.telegram.org",
     "https://preeminent-karisa-nonministerially.ngrok-free.dev",
+    "http://localhost:8000"
 ]
 CORS_ALLOW_CREDENTIALS = True
 # CORS_ALLOW_ALL_ORIGINS = False
