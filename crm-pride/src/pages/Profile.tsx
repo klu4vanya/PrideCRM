@@ -72,21 +72,21 @@ interface UserProfile {
   };
   upcoming_games: any[];
 }
-const userprofile: UserProfile = {
-  user: {
-    user_id: '23412',
-    username: 'string',
-    nick_name: "string",
-    first_name: "string",
-    last_name: "string",
-    phone_number: "string",
-    email: "string",
-    date_of_birth: "string",
-    points: 4,
-    total_games_played: 3,
-  },
-  upcoming_games: [3]
-}
+// const userprofile: UserProfile = {
+//   user: {
+//     user_id: '23412',
+//     username: 'string',
+//     nick_name: "string",
+//     first_name: "string",
+//     last_name: "string",
+//     phone_number: "string",
+//     email: "string",
+//     date_of_birth: "string",
+//     points: 4,
+//     total_games_played: 3,
+//   },
+//   upcoming_games: [3]
+// }
 const Profile: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
@@ -132,7 +132,6 @@ const Profile: React.FC = () => {
       const response = await profileAPI.getProfile();
       console.log(response.data);
       setProfile(response.data);
-      setProfile(userprofile);
       console.log("Данные по пользователю", profile)
       setFormData({
         nick_name: response.data.user.nick_name || "",
