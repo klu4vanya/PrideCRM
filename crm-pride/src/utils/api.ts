@@ -34,10 +34,9 @@ export const authAPI = {
   },
 };
 export const adminAPI = {
-  dashboard: () =>
-    axios.get("/admin/dashboard/", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("auth_token")}` }
-    }),
+   dashboard: () => {
+   return api.get("/admin/dashboard/")
+  }
 };
 
 export const gamesAPI = {

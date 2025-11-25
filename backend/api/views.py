@@ -419,7 +419,7 @@ class ProfileView(APIView):
 
 class AdminDashboardView(APIView):
     """Дашборд для администратора"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request):
         stats = {
