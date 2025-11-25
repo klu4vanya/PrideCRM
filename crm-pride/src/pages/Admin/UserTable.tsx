@@ -10,6 +10,7 @@ const Table = styled.table`
   th, td {
     padding: 10px;
     border-bottom: 1px solid #444;
+    color: #222;
   }
   th {
     background: #222;
