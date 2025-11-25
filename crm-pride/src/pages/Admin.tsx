@@ -36,7 +36,7 @@ const ErrorBox = styled.div`
 
 const AdminPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
-  const [tab, setTab] = useState<"users" | "games" | "tickets">("users");
+  const [tab, setTab] = useState<"users" | "games">("users");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,9 +78,6 @@ const AdminPage: React.FC = () => {
         </TabButton>
         <TabButton active={tab === "games"} onClick={() => setTab("games")}>
           Игры
-        </TabButton>
-        <TabButton active={tab === "tickets"} onClick={() => setTab("tickets")}>
-          Тикеты поддержки
         </TabButton>
       </Menu>
 
