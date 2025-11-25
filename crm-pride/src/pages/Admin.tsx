@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { adminAPI } from "../utils/api"; // /admin/dashboard/
 import UsersTable from "./Admin/UserTable";
 import GamesTable from "./Admin/GameTable";
-import TicketsTable from "./Admin/TicketsTable";
 
 const Container = styled.div`
   padding: 20px;
@@ -87,7 +86,6 @@ const AdminPage: React.FC = () => {
 
       {tab === "users" && <UsersTable />}
       {tab === "games" && <GamesTable />}
-      {tab === "tickets" && <TicketsTable />}
     </Container>
   );
 };
