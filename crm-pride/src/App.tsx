@@ -10,6 +10,7 @@ import Rating from "./pages/Rating";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import Support from "./pages/Support";
+import AdminPage from "./pages/Admin";
 
 const Loader = styled.div`
   display: flex;
@@ -137,6 +138,7 @@ const App: React.FC = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />
           <Route path="/support" element={<Support />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Layout>
     </HashRouter>

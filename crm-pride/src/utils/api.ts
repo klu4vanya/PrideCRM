@@ -33,6 +33,12 @@ export const authAPI = {
     return api.post("/auth/telegram/validate/", { initData });
   },
 };
+export const adminAPI = {
+  dashboard: () =>
+    axios.get("/admin/dashboard/", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("auth_token")}` }
+    }),
+};
 
 export const gamesAPI = {
   getGames: () => api.get('/games/'),
