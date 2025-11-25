@@ -66,6 +66,7 @@ export default function GamesTable() {
   };
 
   const remove = async (g: any) => {
+    // eslint-disable-next-line no-restricted-globals
     if (!confirm("Удалить игру?")) return;
     await api.delete(`/games/${g.game_id}/`);
     load();
