@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useLocation, useNavigate } from 'react-router-dom';
+import path from 'path';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -59,6 +60,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/profile', label: '👤 Профиль' },
     { path: '/about', label: 'ℹ️ О клубе' },
     { path: '/support', label: '💬 Поддержка' },
+    { path: '/admin', label: 'админ-панель'}
   ];
 
   return (
