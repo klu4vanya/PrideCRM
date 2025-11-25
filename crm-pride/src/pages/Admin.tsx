@@ -60,7 +60,7 @@ const AdminPage: React.FC = () => {
     return <Container>Загрузка админ-панели…</Container>;
 
   // ❗ если юзер не админ
-  if (!user?.is_admin) {
+  if (!user?.admin_info?.is_admin) {
     console.log("пользователь", user)
     return (
       <ErrorBox>

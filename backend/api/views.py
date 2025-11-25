@@ -422,6 +422,10 @@ class AdminDashboardView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
+        user = request.user
+        admin_info = {
+            'is_admin': UserSerializer(user).data["is_admin"]
+        }
         stats = {
             'total_users': Users.objects.count(),
             'total_games': Games.objects.count(),
@@ -435,6 +439,7 @@ class AdminDashboardView(APIView):
         recent_users = Users.objects.order_by('-created_at')[:5]
         
         return Response({
+            'admin_info': admin_info,
             'stats': stats,
             'recent_games': GameSerializer(recent_games, many=True).data,
             'recent_users': UserSerializer(recent_users, many=True).data

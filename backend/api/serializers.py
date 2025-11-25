@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'user_id', 'username', 'nick_name', 'first_name', 'last_name',
             'phone_number', 'email', 'date_of_birth', 'points', 
-            'total_games_played', 'is_banned', 'created_at'
+            'total_games_played', 'is_admin', 'is_banned', 'created_at'
         ]
         read_only_fields = ['user_id', 'created_at']
 
