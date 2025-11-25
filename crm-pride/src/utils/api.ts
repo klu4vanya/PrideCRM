@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://environmental-genres-zoning-welfare.trycloudflare.com//api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://baths-passengers-lenses-spreading.trycloudflare.com/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
