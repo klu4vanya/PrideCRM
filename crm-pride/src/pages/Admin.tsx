@@ -44,6 +44,7 @@ const AdminPage: React.FC = () => {
     const load = async () => {
       try {
         const response = await adminAPI.dashboard(); // GET /admin/dashboard/
+        console.log(response.data)
         setUser(response.data);
       } catch (e) {
         console.error("Admin dashboard error:", e);
@@ -60,6 +61,7 @@ const AdminPage: React.FC = () => {
 
   // ❗ если юзер не админ
   if (!user?.is_admin) {
+    console.log("пользователь", user)
     return (
       <ErrorBox>
         ❌ У вас нет прав администратора
