@@ -2,18 +2,25 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { authAPI, profileAPI } from "../utils/api";
 import { useTelegram } from "../hooks/useTelegram";
+import { ImageWithFallback } from "../components/ImageWithFallback";
+import { Title } from "./Schedule";
+import test_photo from "../assets/logo_pride.jpeg";
 
 const ProfileContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  width: 100%;
+  height: 100vh;
+  background-color: #000;
 `;
-
+const Subtitle = styled.strong`
+  color: #fff;
+`
+const ProfileAnswers = styled.p`
+  color: #fff;
+`
 const ProfileSection = styled.div`
-  background: white;
+  background: #000;
   padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: -15%;
 `;
 
 const Form = styled.form`
@@ -30,16 +37,17 @@ const Input = styled.input`
 `;
 
 const Button = styled.button`
-  background: #2196f3;
+  background: #e75c1c;
   color: white;
   border: none;
   padding: 12px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 16px;
+  margin: 5% 0 5% 0;
 
   &:hover {
-    background: #1976d2;
+    background: #9d3b0a;
   }
 `;
 
@@ -55,6 +63,22 @@ const StatCard = styled.div`
   padding: 15px;
   border-radius: 10px;
   text-align: center;
+`;
+const PhotoUser = styled.div`
+  position: relative;
+  left: 15%;
+  bottom: 0;
+  transform: translate(0, -50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  overflow: hidden;
+  img{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 `;
 
 interface UserProfile {
@@ -72,21 +96,6 @@ interface UserProfile {
   };
   upcoming_games: any[];
 }
-// const userprofile: UserProfile = {
-//   user: {
-//     user_id: '23412',
-//     username: 'string',
-//     nick_name: "string",
-//     first_name: "string",
-//     last_name: "string",
-//     phone_number: "string",
-//     email: "string",
-//     date_of_birth: "string",
-//     points: 4,
-//     total_games_played: 3,
-//   },
-//   upcoming_games: [3]
-// }
 const Profile: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
@@ -97,18 +106,18 @@ const Profile: React.FC = () => {
     phone_number: "",
     email: "",
     date_of_birth: "",
-    points: ''
+    points: "",
   });
+
   const { initData } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-
   useEffect(() => {
     const authenticateAndLoadProfile = async () => {
       try {
         if (initData) {
           const authResponse = await authAPI.telegramInitAuth(initData);
-          <div>{initData}</div>
+          <div>{initData}</div>;
           if (authResponse.data.token) {
             localStorage.setItem("auth_token", authResponse.data.token);
             await loadProfile();
@@ -118,6 +127,7 @@ const Profile: React.FC = () => {
         }
       } catch (error: any) {
         setAuthError(error.response?.data?.error || error.message);
+        loadProfile();
       } finally {
         setLoading(false);
       }
@@ -125,14 +135,10 @@ const Profile: React.FC = () => {
     authenticateAndLoadProfile();
   }, [initData, authError]);
 
-
   const loadProfile = async () => {
     try {
-      
       const response = await profileAPI.getProfile();
-      console.log(response.data);
       setProfile(response.data);
-      console.log("Данные по пользователю", profile)
       setFormData({
         nick_name: response.data.user.nick_name || "",
         first_name: response.data.user.first_name || "",
@@ -140,9 +146,9 @@ const Profile: React.FC = () => {
         phone_number: response.data.user.phone_number || "",
         email: response.data.user.email || "",
         date_of_birth: response.data.user.date_of_birth || "",
-        points: response.data.user.points || ""
+        points: response.data.user.points || "",
       });
-      console.log("form data:", formData)
+      console.log("form data:", formData);
     } catch (error: any) {
       <div>{error}</div>
     }
@@ -159,14 +165,23 @@ const Profile: React.FC = () => {
       alert("Ошибка при обновлении профиля");
     }
   };
-
   if (!profile) return <div>{profile}</div>;
+
   if (loading) return <div>Загрузка...</div>;
 
   return (
     <ProfileContainer>
+      <ImageWithFallback
+        src="https://images.unsplash.com/photo-1636583133884-fbefc7ac3fb3"
+        alt="Cover"
+        overlayColor="linear-gradient(180deg, rgba(185, 82, 8, 0.8), rgb(244, 101, 11, 0.4))"
+        overlayOpacity={7}
+      ></ImageWithFallback>
+      <PhotoUser>
+        <img src={test_photo}/>
+      </PhotoUser>
       <ProfileSection>
-        <h2>👤 Мой профиль</h2>
+        <Title style={{ color: "#fff"}}>Мой профиль</Title>
         <StatsGrid>
           <StatCard>
             <div
@@ -195,8 +210,7 @@ const Profile: React.FC = () => {
         </StatsGrid>
       </ProfileSection>
 
-      <ProfileSection>
-        <h3>📝 Информация о себе</h3>
+      <ProfileSection style={{margin: 0}}>
         {editing ? (
           <Form onSubmit={handleSubmit}>
             <Input
@@ -250,26 +264,26 @@ const Profile: React.FC = () => {
           </Form>
         ) : (
           <div>
-            <p>
-              <strong>Никнейм:</strong> {profile.user.nick_name || "Не указан"}
-            </p>
-            <p>
-              <strong>Имя:</strong> {profile.user.first_name || "Не указано"}
-            </p>
-            <p>
-              <strong>Фамилия:</strong> {profile.user.last_name || "Не указана"}
-            </p>
-            <p>
-              <strong>Телефон:</strong>{" "}
+            <ProfileAnswers >
+              <Subtitle>Никнейм:</Subtitle> {profile.user.nick_name || "Не указан"}
+            </ProfileAnswers>
+            <ProfileAnswers>
+              <Subtitle>Имя:</Subtitle> {profile.user.first_name || "Не указано"}
+            </ProfileAnswers>
+            <ProfileAnswers>
+              <Subtitle>Фамилия:</Subtitle> {profile.user.last_name || "Не указана"}
+            </ProfileAnswers>
+            <ProfileAnswers>
+              <Subtitle>Телефон:</Subtitle>{" "}
               {profile.user.phone_number || "Не указан"}
-            </p>
-            <p>
-              <strong>Email:</strong> {profile.user.email || "Не указан"}
-            </p>
-            <p>
-              <strong>Дата рождения:</strong>{" "}
+            </ProfileAnswers>
+            <ProfileAnswers>
+              <Subtitle>Email:</Subtitle> {profile.user.email || "Не указан"}
+            </ProfileAnswers>
+            <ProfileAnswers>
+              <Subtitle>Дата рождения:</Subtitle>{" "}
               {profile.user.date_of_birth || "Не указана"}
-            </p>
+            </ProfileAnswers>
             <Button onClick={() => setEditing(true)}>Редактировать</Button>
           </div>
         )}

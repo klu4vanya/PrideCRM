@@ -2,7 +2,25 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { authAPI, gamesAPI } from "../utils/api";
 import { useTelegram } from "../hooks/useTelegram";
+import { ReactComponent as CalendarIcon } from "../assets/calendar.svg";
 
+export const ScheduleContainer = styled.div`
+  padding: 20px;
+  height: 16%;
+  background-color: rgb(234, 50, 0);
+`;
+export const Title = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 3%;
+  width: 80%;
+  height: 50px;
+
+  span {
+    color: #fff;
+    font-size: 20px;
+  }
+`;
 const GamesList = styled.div`
   display: flex;
   flex-direction: column;
@@ -59,33 +77,33 @@ const Schedule: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-      const authenticateAndLoadProfile = async () => {
-        try {
-          if (initData) {
-            console.log("🔄 Authenticating with initData...");
-  
-            const authResponse = await authAPI.telegramInitAuth(initData);
-            console.log("✅ Auth response:", authResponse.data);
-  
-            if (authResponse.data.token) {
-              localStorage.setItem("auth_token", authResponse.data.token);
-              console.log("🔑 Token saved");
-  
-              await loadGames();
-            }
-          } else {
-            throw new Error("No token in response");
+    const authenticateAndLoadProfile = async () => {
+      try {
+        if (initData) {
+          console.log("🔄 Authenticating with initData...");
+
+          const authResponse = await authAPI.telegramInitAuth(initData);
+          console.log("✅ Auth response:", authResponse.data);
+
+          if (authResponse.data.token) {
+            localStorage.setItem("auth_token", authResponse.data.token);
+            console.log("🔑 Token saved");
+
+            await loadGames();
           }
-        } catch (error: any) {
-          console.error("❌ Authentication error:", error);
-          setAuthError(error.response?.data?.error || error.message);
-          console.log(authError)
-        } finally {
-          setLoading(false);
+        } else {
+          throw new Error("No token in response");
         }
-      };
-      authenticateAndLoadProfile();
-    }, [initData, authError]);
+      } catch (error: any) {
+        console.error("❌ Authentication error:", error);
+        setAuthError(error.response?.data?.error || error.message);
+        console.log(authError);
+      } finally {
+        setLoading(false);
+      }
+    };
+    authenticateAndLoadProfile();
+  }, [initData, authError]);
 
   const loadGames = async () => {
     try {
@@ -111,8 +129,13 @@ const Schedule: React.FC = () => {
   if (loading) return <div>Загрузка расписания...</div>;
 
   return (
-    <div>
-      <h2>📅 Расписание игр</h2>
+    <>
+      <ScheduleContainer>
+        <Title>
+          <CalendarIcon stroke="#fff" />
+          <span>Расписание игр на неделю</span>
+        </Title>
+      </ScheduleContainer>
       <GamesList>
         {games.map((game) => (
           <GameCard key={game.game_id}>
@@ -131,7 +154,7 @@ const Schedule: React.FC = () => {
           </GameCard>
         ))}
       </GamesList>
-    </div>
+    </>
   );
 };
 

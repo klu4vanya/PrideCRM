@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { authAPI, ratingAPI } from "../utils/api";
 import { useTelegram } from "../hooks/useTelegram";
+import { ScheduleContainer, Title } from "./Schedule";
+import {ReactComponent as TrophyIcon} from '../assets/trophy.svg'
 
 const RatingTable = styled.div`
   display: flex;
@@ -99,8 +101,13 @@ const Rating: React.FC = () => {
   if (loading) return <div>Загрузка рейтинга...</div>;
 
   return (
-    <div>
-      <h2>🏆 Рейтинг игроков</h2>
+    <>
+    <ScheduleContainer>
+        <Title>
+          <TrophyIcon stroke="#fff" />
+          <span>Рейтинг игроков</span>
+        </Title>
+      </ScheduleContainer>
       <RatingTable>
         {rating.map((item) => (
           <RatingItem key={item.user.user_id} top3={item.rank <= 3}>
@@ -125,7 +132,7 @@ const Rating: React.FC = () => {
           </RatingItem>
         ))}
       </RatingTable>
-    </div>
+      </>
   );
 };
 

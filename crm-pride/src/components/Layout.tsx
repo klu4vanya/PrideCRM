@@ -1,70 +1,60 @@
-import React from 'react';
-import styled from 'styled-components';
-import { useLocation, useNavigate } from 'react-router-dom';
-import path from 'path';
+import React from "react";
+import styled from "styled-components";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ReactComponent as CalendarIcon } from "../assets/calendar.svg";
+import { ReactComponent as TrophyIcon } from "../assets/trophy.svg";
+import { ReactComponent as UserIcon } from "../assets/user.svg";
+import { ReactComponent as InfoIcon } from "../assets/info.svg";
+import { ReactComponent as UserStarIcon } from "../assets/user-star.svg";
 
-const Container = styled.div`
-  min-height: 100vh;
-  background: var(--tg-theme-bg-color, #ffffff);
-  padding: 16px;
-`;
 
 const Nav = styled.nav`
   display: flex;
   justify-content: space-around;
-  /* background: rgba(255, 255, 255, 0.1); */
-  /* backdrop-filter: blur(10px); */
-  border-radius: 25px;
-  padding: 12px;
-  margin-bottom: 20px;
-  background: transparent;   // временно
+  background-color: #222;
+  width: 90%;
+  padding: 11px;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
+  
 `;
 
-
 const NavButton = styled.button<{ active: boolean }>`
-  background: ${props => props.active ? 'rgba(255, 255, 255, 0.2)' : 'transparent'};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1;
+  color: ${(props) =>
+    props.active ? "rgb(254, 181, 0)" : "rgb(120, 120, 131)"};
   border: none;
-  color: white;
-  padding: 10px 16px;
-  border-radius: 20px;
+  background-color: #222;
   cursor: pointer;
-  font-weight: ${props => props.active ? 'bold' : 'normal'};
   transition: all 0.3s ease;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.15);
+  :active{
+    img {
+      color: 'rgb(254, 181, 0)';
+    }
   }
 `;
 
-const Content = styled.div`
-  /* background: rgba(255, 255, 255, 0.95); */
-  /* backdrop-filter: blur(10px); */
-  background: white;  // временно
-  border-radius: 20px;
-  padding: 20px;
-  min-height: 400px;
-`;
 
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
-    { path: '/', label: '🎯 Расписание' },
-    { path: '/rating', label: '🏆 Рейтинг' },
-    { path: '/profile', label: '👤 Профиль' },
-    { path: '/about', label: 'ℹ️ О клубе' },
-    { path: '/support', label: '💬 Поддержка' },
-    { path: '/admin', label: 'админ-панель'}
+    { path: "/", label: "Расписание", image: <CalendarIcon /> },
+    { path: "/rating", label: "Рейтинг", image: <TrophyIcon /> },
+    { path: "/profile", label: "Профиль", image: <UserIcon /> },
+    { path: "/about", label: "О клубе", image: <InfoIcon /> },
+    { path: "/admin", label: "Админ", image: <UserStarIcon /> },
   ];
 
   return (
-    <Container>
       <Nav>
         {navItems.map((item) => (
           <NavButton
@@ -72,14 +62,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             active={location.pathname === item.path}
             onClick={() => navigate(item.path)}
           >
+            {item.image}
             {item.label}
           </NavButton>
         ))}
       </Nav>
-      <Content>
-        {children}
-      </Content>
-    </Container>
   );
 };
 
