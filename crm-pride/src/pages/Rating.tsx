@@ -3,7 +3,37 @@ import styled from "styled-components";
 import { authAPI, ratingAPI } from "../utils/api";
 import { useTelegram } from "../hooks/useTelegram";
 import { ScheduleContainer, Title } from "./Schedule";
-import {ReactComponent as TrophyIcon} from '../assets/trophy.svg'
+import { ReactComponent as TrophyIcon } from "../assets/trophy.svg";
+
+const TopPlayersContainer = styled.div`
+  width: auto;
+  height: 200px;
+  display: flex;
+  align-items: end;
+  justify-content: space-evenly;
+  padding: 10px;
+`;
+const TopPlayerInfoContainer = styled.div`
+  width: 35%;
+  height: 100px;
+  border: 3px solid rgb(45, 45, 50);
+  background-color: rgb(19, 19, 21);
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  h3, h4, h5 {
+    margin: 0;
+  }
+`;
+const PlayerInfoContainer = styled.div`
+  width: 50%;
+  height: 70%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+`;
 
 const RatingTable = styled.div`
   display: flex;
@@ -16,9 +46,8 @@ const RatingItem = styled.div<{ top3: boolean }>`
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: ${(props) => (props.top3 ? "#fff3cd" : "white")};
-  border: ${(props) =>
-    props.top3 ? "2px solid #ffc107" : "1px solid #e0e0e0"};
+  background:rgb(18, 19, 20);
+  border: 2px solid rgb(29, 29, 32);
   border-radius: 10px;
   font-weight: ${(props) => (props.top3 ? "bold" : "normal")};
 `;
@@ -35,7 +64,7 @@ const UserInfo = styled.div`
 
 const Points = styled.span`
   font-weight: bold;
-  color: #2196f3;
+  color: rgb(254, 181, 0);
 `;
 
 interface RatingUser {
@@ -51,6 +80,7 @@ interface RatingUser {
   points: number;
   games_played: number;
 }
+
 
 const Rating: React.FC = () => {
   const [rating, setRating] = useState<RatingUser[]>([]);
@@ -79,7 +109,7 @@ const Rating: React.FC = () => {
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
         setAuthError(error.response?.data?.error || error.message);
-        console.log(authError)
+        console.log(authError);
       } finally {
         setLoading(false);
       }
@@ -97,17 +127,72 @@ const Rating: React.FC = () => {
       setLoading(false);
     }
   };
-
   if (loading) return <div>Загрузка рейтинга...</div>;
 
   return (
     <>
-    <ScheduleContainer>
+      <ScheduleContainer>
         <Title>
           <TrophyIcon stroke="#fff" />
           <span>Рейтинг игроков</span>
         </Title>
       </ScheduleContainer>
+      <TopPlayersContainer>
+        <TopPlayerInfoContainer>
+          <PlayerInfoContainer>
+            <h3 style={{ color: "rgb(45, 45, 50)" }}>2nd</h3>
+            <h4>
+              {rating
+                .filter((item) => item.rank === 2)
+                .map((item) => item.user.first_name)}
+            </h4>
+            <h5>
+              {rating
+                .filter((item) => item.rank === 2)
+                .map((item) => item.points)}
+            </h5>
+          </PlayerInfoContainer>
+        </TopPlayerInfoContainer>
+        <TopPlayerInfoContainer
+          style={{
+            backgroundColor: "rgb(213, 43, 0)",
+            height: "150px",
+          }}
+        >
+          <PlayerInfoContainer>
+            <h3 style={{color: '#fff'}}>1st</h3>
+            <h4 style={{color: '#fff'}}>
+              {rating
+                .filter((item) => item.rank === 1)
+                .map((item) => item.user.first_name)}
+            </h4>
+            <h5 style={{color: '#fff'}}>
+              {rating
+                .filter((item) => item.rank === 1)
+                .map((item) => item.points)}
+            </h5>
+          </PlayerInfoContainer>
+        </TopPlayerInfoContainer>
+        <TopPlayerInfoContainer
+          style={{
+            height: "130px",
+          }}
+        >
+          <PlayerInfoContainer>
+            <h3 style={{ color: "rgb(45, 45, 50)" }}>3rd</h3>
+            <h4>
+              {rating
+                .filter((item) => item.rank === 3)
+                .map((item) => item.user.first_name)}
+            </h4>
+            <h5>
+              {rating
+                .filter((item) => item.rank === 3)
+                .map((item) => item.points)}
+            </h5>
+          </PlayerInfoContainer>
+        </TopPlayerInfoContainer>
+      </TopPlayersContainer>
       <RatingTable>
         {rating.map((item) => (
           <RatingItem key={item.user.user_id} top3={item.rank <= 3}>
@@ -121,18 +206,18 @@ const Rating: React.FC = () => {
                 : item.rank}
             </Rank>
             <UserInfo>
-              <div>
+              <div style={{color: '#fff'}}>
                 {item.user.first_name} {item.user.last_name}
               </div>
               <div style={{ fontSize: "0.8em", color: "#666" }}>
-                @{item.user.username} • Игр: {item.user.total_games_played}
+                Игр: {item.user.total_games_played}
               </div>
             </UserInfo>
             <Points>{item.points} очков</Points>
           </RatingItem>
         ))}
       </RatingTable>
-      </>
+    </>
   );
 };
 
