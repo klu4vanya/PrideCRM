@@ -122,6 +122,7 @@ export default function GamesTable() {
   };
 
   const addEntry = async (p: any) => {
+     // eslint-disable-next-line no-restricted-globals
     const value = prompt("Сколько входов добавить?");
     if (!value) return;
     await api.post(`/participants/${p.id}/add_entry/`, { value });
@@ -129,6 +130,7 @@ export default function GamesTable() {
   };
 
   const addRebuy = async (p: any) => {
+     // eslint-disable-next-line no-restricted-globals
     const value = prompt("Сколько ребаев добавить?");
     if (!value) return;
     await api.post(`/participants/${p.id}/add_rebuy/`, { value });
@@ -136,6 +138,7 @@ export default function GamesTable() {
   };
 
   const addAddon = async (p: any) => {
+     // eslint-disable-next-line no-restricted-globals
     const value = prompt("Сколько аддонов добавить?");
     if (!value) return;
     await api.post(`/participants/${p.id}/add_addon/`, { value });
