@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  # Django бэкенд
   backend:
     build: ./backend
+    container_name: backend
     ports:
       - "8000:8000"
     environment:
@@ -18,27 +18,33 @@ services:
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
 
-  # React фронтенд
-  frontend:
-    build: ./crm-pride
-    ports:
-      - "3000:80"
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000/api
-      - REACT_APP_TELEGRAM_BOT_NAME=${TELEGRAM_BOT_NAME}
-    depends_on:
-      - backend
+  # frontend:
+  #   build: ./crm-pride
+  #   ports:
+  #     - "3000:80"
+  #   environment:
+  #     - REACT_APP_API_URL=https://5.129.246.53/api
+  #     - REACT_APP_TELEGRAM_BOT_NAME=${TELEGRAM_BOT_NAME}
+  #   depends_on:
+  #     - backend
 
-  # Telegram бот
   telegram-bot:
     build: ./backend
     command: python telegram_bot.py
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - API_BASE_URL=http://backend:8000/api
-      - MINI_APP_URL=http://localhost:3000
+      - MINI_APP_URL=http://frontend
     depends_on:
       - backend
 
-volumes:
-  db_data:
+  caddy:
+    image: caddy:latest
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - backend
