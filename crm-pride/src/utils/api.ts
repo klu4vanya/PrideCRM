@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '5.129.246.53:8000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'api.pridepokerclub.ru';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
