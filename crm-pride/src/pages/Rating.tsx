@@ -57,6 +57,7 @@ const RatingItem = styled.div<{ top3: boolean }>`
 const Rank = styled.span`
   font-size: 1.2em;
   min-width: 30px;
+  color: #fff;
 `;
 
 const UserInfo = styled.div`
