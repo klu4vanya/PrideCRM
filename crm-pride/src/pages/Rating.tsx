@@ -22,7 +22,9 @@ const TopPlayerInfoContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  h3, h4, h5 {
+  h3,
+  h4,
+  h5 {
     margin: 0;
   }
 `;
@@ -46,7 +48,7 @@ const RatingItem = styled.div<{ top3: boolean }>`
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background:rgb(18, 19, 20);
+  background: rgb(18, 19, 20);
   border: 2px solid rgb(29, 29, 32);
   border-radius: 10px;
   font-weight: ${(props) => (props.top3 ? "bold" : "normal")};
@@ -80,7 +82,6 @@ interface RatingUser {
   points: number;
   games_played: number;
 }
-
 
 const Rating: React.FC = () => {
   const [rating, setRating] = useState<RatingUser[]>([]);
@@ -140,13 +141,13 @@ const Rating: React.FC = () => {
       <TopPlayersContainer>
         <TopPlayerInfoContainer>
           <PlayerInfoContainer>
-            <h3 style={{ color: "rgb(45, 45, 50)" }}>2nd</h3>
-            <h4>
+            <h3 style={{ color: "#fff" }}>2nd</h3>
+            <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 2)
                 .map((item) => item.user.first_name)}
             </h4>
-            <h5>
+            <h5 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 2)
                 .map((item) => item.points)}
@@ -160,13 +161,13 @@ const Rating: React.FC = () => {
           }}
         >
           <PlayerInfoContainer>
-            <h3 style={{color: '#fff'}}>1st</h3>
-            <h4 style={{color: '#fff'}}>
+            <h3 style={{ color: "#fff" }}>1st</h3>
+            <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 1)
                 .map((item) => item.user.first_name)}
             </h4>
-            <h5 style={{color: '#fff'}}>
+            <h5 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 1)
                 .map((item) => item.points)}
@@ -179,13 +180,13 @@ const Rating: React.FC = () => {
           }}
         >
           <PlayerInfoContainer>
-            <h3 style={{ color: "rgb(45, 45, 50)" }}>3rd</h3>
-            <h4>
+            <h3 style={{ color: "#fff" }}>3rd</h3>
+            <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 3)
                 .map((item) => item.user.first_name)}
             </h4>
-            <h5>
+            <h5 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 3)
                 .map((item) => item.points)}
@@ -206,7 +207,7 @@ const Rating: React.FC = () => {
                 : item.rank}
             </Rank>
             <UserInfo>
-              <div style={{color: '#fff'}}>
+              <div style={{ color: "#fff" }}>
                 {item.user.first_name} {item.user.last_name}
               </div>
               <div style={{ fontSize: "0.8em", color: "#666" }}>
