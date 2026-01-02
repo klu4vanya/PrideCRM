@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-globals */
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { api } from "../../utils/api";
@@ -115,14 +116,18 @@ export default function GamesTable() {
   };
 
   const remove = async (g: any) => {
-     // eslint-disable-next-line no-restricted-globals
     if (!confirm("Удалить игру?")) return;
-    await api.delete(`/games/${g.game_id}/`);
-    load();
+    
+    try {
+      await api.delete(`/games/${g.game_id}/`);
+      await load();
+    } catch (error) {
+      console.error('Ошибка при удалении:', error);
+      alert('Не удалось удалить игру');
+    }
   };
 
   const addEntry = async (p: any) => {
-   
     const value = prompt("Сколько входов добавить?");
     if (!value) return;
     await api.post(`/participants/${p.id}/add_entry/`, { value });
@@ -130,7 +135,6 @@ export default function GamesTable() {
   };
 
   const addRebuy = async (p: any) => {
-     // eslint-disable-next-line no-restricted-globals
     const value = prompt("Сколько ребаев добавить?");
     if (!value) return;
     await api.post(`/participants/${p.id}/add_rebuy/`, { value });
@@ -138,7 +142,6 @@ export default function GamesTable() {
   };
 
   const addAddon = async (p: any) => {
-     // eslint-disable-next-line no-restricted-globals
     const value = prompt("Сколько аддонов добавить?");
     if (!value) return;
     await api.post(`/participants/${p.id}/add_addon/`, { value });

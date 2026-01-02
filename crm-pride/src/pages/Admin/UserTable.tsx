@@ -68,6 +68,7 @@ export default function UsersTable() {
   };
 
   const addPoints = async (u: any) => {
+    // eslint-disable-next-line no-restricted-globals
     const pts = prompt("Сколько очков добавить?");
     if (!pts) return;
     await api.post(`/users/${u.user_id}/add_points/`, { points: pts });

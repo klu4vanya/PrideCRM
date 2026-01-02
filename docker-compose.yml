@@ -4,8 +4,8 @@ services:
   backend:
     build: ./backend
     container_name: backend
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - DATABASE_URL=sqlite:///db.sqlite3
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
@@ -17,16 +17,8 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
-
-  # frontend:
-  #   build: ./crm-pride
-  #   ports:
-  #     - "3000:80"
-  #   environment:
-  #     - REACT_APP_API_URL=https://5.129.246.53/api
-  #     - REACT_APP_TELEGRAM_BOT_NAME=${TELEGRAM_BOT_NAME}
-  #   depends_on:
-  #     - backend
+    networks:
+      - app-network
 
   telegram-bot:
     build: ./backend
@@ -37,6 +29,8 @@ services:
       - MINI_APP_URL=http://frontend
     depends_on:
       - backend
+    networks:
+      - app-network
 
   caddy:
     image: caddy:latest
@@ -46,5 +40,17 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - backend
+    networks:
+      - app-network
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  app-network:
+    driver: bridge
