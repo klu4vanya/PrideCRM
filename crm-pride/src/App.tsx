@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {  Routes, Route, HashRouter } from "react-router-dom";
+import { Routes, Route, HashRouter } from "react-router-dom";
 import styled from "styled-components";
 import { useTelegram } from "./hooks/useTelegram";
 import { authAPI } from "./utils/api";
@@ -67,7 +67,7 @@ const App: React.FC = () => {
             } catch (e) {
               console.warn("localStorage error:", e);
             }
-          }, 300); 
+          }, 300);
           setLoading(false);
           return;
         }
@@ -133,6 +133,7 @@ const App: React.FC = () => {
     <HashRouter>
       <Layout>
         <Routes>
+          <Route index element={<Schedule />} />
           <Route path="/" element={<Schedule />} />
           <Route path="/rating" element={<Rating />} />
           <Route path="/profile" element={<Profile />} />
