@@ -38,6 +38,7 @@ const ModalBg = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 `;
 
 const Modal = styled.div`
@@ -72,6 +73,14 @@ const Btn = styled.button`
   }
 `;
 
+const DeleteBtn = styled(Btn)`
+  background: linear-gradient(145deg, #d32f2f, #b71c1c);
+  
+  &:hover {
+    background: linear-gradient(145deg, #f44336, #c62828);
+  }
+`;
+
 const ActionButton = ({ label, onClick }: any) => (
   <Btn onClick={onClick} style={{ fontSize: 12 }}>
     {label}
@@ -83,13 +92,18 @@ export default function GamesTable() {
   const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState<any | null>(null);
   const [createMode, setCreateMode] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<any | null>(null);
 
   const [openGameId, setOpenGameId] = useState<number | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const res = await api.get("/games/");
-    setGames(res.data);
+    try {
+      const res = await api.get("/games/");
+      setGames(res.data);
+    } catch (error) {
+      console.error('Ошибка загрузки игр:', error);
+    }
     setLoading(false);
   };
 
@@ -104,48 +118,77 @@ export default function GamesTable() {
   };
 
   const save = async () => {
-    await api.patch(`/games/${edit.game_id}/`, edit);
-    await load();
-    close();
+    try {
+      await api.patch(`/games/${edit.game_id}/`, edit);
+      await load();
+      close();
+    } catch (error) {
+      console.error('Ошибка сохранения:', error);
+      alert('Не удалось сохранить изменения');
+    }
   };
 
   const createGame = async () => {
-    await api.post(`/games/`, edit);
-    await load();
-    close();
+    try {
+      await api.post(`/games/`, edit);
+      await load();
+      close();
+    } catch (error) {
+      console.error('Ошибка создания:', error);
+      alert('Не удалось создать игру');
+    }
   };
 
-  const remove = async (g: any) => {
-    if (!confirm("Удалить игру?")) return;
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
     
     try {
-      await api.delete(`/games/${g.game_id}/`);
+      console.log('Удаление игры:', deleteConfirm.game_id);
+      await api.delete(`/games/${deleteConfirm.game_id}/`);
+      console.log('Игра удалена успешно');
       await load();
-    } catch (error) {
+      setDeleteConfirm(null);
+    } catch (error: any) {
       console.error('Ошибка при удалении:', error);
-      alert('Не удалось удалить игру');
+      console.error('Детали ошибки:', error.response?.data);
+      alert(`Не удалось удалить игру: ${error.response?.data?.detail || error.message}`);
     }
   };
 
   const addEntry = async (p: any) => {
-    const value = prompt("Сколько входов добавить?");
+    const value = window.prompt("Сколько входов добавить?");
     if (!value) return;
-    await api.post(`/participants/${p.id}/add_entry/`, { value });
-    load();
+    try {
+      await api.post(`/participants/${p.id}/add_entry/`, { value });
+      await load();
+    } catch (error) {
+      console.error('Ошибка добавления входа:', error);
+      alert('Не удалось добавить вход');
+    }
   };
 
   const addRebuy = async (p: any) => {
-    const value = prompt("Сколько ребаев добавить?");
+    const value = window.prompt("Сколько ребаев добавить?");
     if (!value) return;
-    await api.post(`/participants/${p.id}/add_rebuy/`, { value });
-    load();
+    try {
+      await api.post(`/participants/${p.id}/add_rebuy/`, { value });
+      await load();
+    } catch (error) {
+      console.error('Ошибка добавления ребая:', error);
+      alert('Не удалось добавить ребай');
+    }
   };
 
   const addAddon = async (p: any) => {
-    const value = prompt("Сколько аддонов добавить?");
+    const value = window.prompt("Сколько аддонов добавить?");
     if (!value) return;
-    await api.post(`/participants/${p.id}/add_addon/`, { value });
-    load();
+    try {
+      await api.post(`/participants/${p.id}/add_addon/`, { value });
+      await load();
+    } catch (error) {
+      console.error('Ошибка добавления аддона:', error);
+      alert('Не удалось добавить аддон');
+    }
   };
 
   if (loading) return <div>Загрузка...</div>;
@@ -172,8 +215,8 @@ export default function GamesTable() {
 
         <tbody>
           {games.map((g) => (
-            <>
-              <tr key={g.game_id}>
+            <React.Fragment key={g.game_id}>
+              <tr>
                 <td>{g.game_id}</td>
                 <td>{g.date}</td>
                 <td>{g.location}</td>
@@ -186,9 +229,9 @@ export default function GamesTable() {
                   <Btn onClick={() => openEdit(g)} style={{ marginLeft: 8 }}>
                     Изменить
                   </Btn>
-                  <Btn onClick={() => remove(g)} style={{ marginLeft: 8 }}>
+                  <DeleteBtn onClick={() => setDeleteConfirm(g)} style={{ marginLeft: 8 }}>
                     Удалить
-                  </Btn>
+                  </DeleteBtn>
                 </td>
               </tr>
 
@@ -226,14 +269,32 @@ export default function GamesTable() {
                   </td>
                 </tr>
               )}
-            </>
+            </React.Fragment>
           ))}
         </tbody>
       </Table>
 
+      {/* Модалка удаления */}
+      {deleteConfirm && (
+        <ModalBg onClick={() => setDeleteConfirm(null)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <h3>Подтверждение удаления</h3>
+            <p>Вы уверены, что хотите удалить игру #{deleteConfirm.game_id}?</p>
+            <p><b>Дата:</b> {deleteConfirm.date}</p>
+            <p><b>Локация:</b> {deleteConfirm.location}</p>
+            <br />
+            <DeleteBtn onClick={confirmDelete}>Удалить</DeleteBtn>
+            <Btn onClick={() => setDeleteConfirm(null)} style={{ marginLeft: 10 }}>
+              Отмена
+            </Btn>
+          </Modal>
+        </ModalBg>
+      )}
+
+      {/* Модалка редактирования/создания */}
       {(edit || createMode) && (
-        <ModalBg>
-          <Modal>
+        <ModalBg onClick={close}>
+          <Modal onClick={(e) => e.stopPropagation()}>
             <h3>{createMode ? "Создание игры" : "Редактирование"}</h3>
 
             <label>Дата</label>
