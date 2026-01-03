@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, HashRouter } from "react-router-dom";
+import { Routes, Route, HashRouter, Navigate } from "react-router-dom";
 import styled from "styled-components";
 import { useTelegram } from "./hooks/useTelegram";
 import { authAPI } from "./utils/api";
@@ -30,25 +30,19 @@ const App: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ======================================================
-  // 🔐 АВТОРИЗАЦИЯ ЧЕРЕЗ initData (Mini App)
-  // ======================================================
   useEffect(() => {
     const runAuth = async () => {
       try {
-        // 1. Если Telegram ещё НЕ готов — ждать
         if (isTelegram && !isReady) {
           return;
         }
 
-        // 3. Если токен уже есть
         const existing = localStorage.getItem("auth_token");
         if (existing) {
           setLoading(false);
           return;
         }
 
-        // 4. Авторизация через initData
         if (isTelegram) {
           if (!initData)
             throw new Error(
@@ -67,12 +61,11 @@ const App: React.FC = () => {
             } catch (e) {
               console.warn("localStorage error:", e);
             }
-          }, 300);
+          }, 300); 
           setLoading(false);
           return;
         }
 
-        // 5. Если не Telegram — просто загрузить сайт
         setLoading(false);
       } catch (err: any) {
         setAuthError(
@@ -85,9 +78,6 @@ const App: React.FC = () => {
     runAuth();
   }, [initData, isReady, isTelegram]);
 
-  // ======================================================
-  // LOADING
-  // ======================================================
   if (loading) {
     return (
       <Loader>
@@ -99,9 +89,6 @@ const App: React.FC = () => {
     );
   }
 
-  // ======================================================
-  // ERROR
-  // ======================================================
   if (authError) {
     return (
       <Loader>
@@ -126,20 +113,18 @@ const App: React.FC = () => {
     );
   }
 
-  // ======================================================
-  // APP CONTENT
-  // ======================================================
   return (
     <HashRouter>
       <Layout>
         <Routes>
-          <Route index element={<Schedule />} />
           <Route path="/" element={<Schedule />} />
           <Route path="/rating" element={<Rating />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />
           <Route path="/support" element={<Support />} />
           <Route path="/admin" element={<AdminPage />} />
+          {/* Редирект для всех неизвестных маршрутов */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
     </HashRouter>
