@@ -7,14 +7,16 @@ import { ReactComponent as UserIcon } from "../assets/user.svg";
 import { ReactComponent as InfoIcon } from "../assets/info.svg";
 import { ReactComponent as UserStarIcon } from "../assets/user-star.svg";
 
-
+const ContentWrapper = styled.div`
+  padding-bottom: 80px; 
+`;
 const Nav = styled.nav`
   display: flex;
   justify-content: space-around;
   background-color: #222;
   width: 90%;
   padding: 11px;
-  position: absolute;
+  position: fixed;
   bottom: 0;
   left: 50%;
   transform: translate(-50%, 0);
@@ -42,7 +44,7 @@ const NavButton = styled.button<{ active: boolean }>`
 
 
 
-const Layout: React.FC = () => {
+const Layout: React.FC<{ children?: React.ReactNode }> = ({children}) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -55,6 +57,8 @@ const Layout: React.FC = () => {
   ];
 
   return (
+    <>
+      <ContentWrapper>{children}</ContentWrapper>
       <Nav>
         {navItems.map((item) => (
           <NavButton
@@ -67,6 +71,7 @@ const Layout: React.FC = () => {
           </NavButton>
         ))}
       </Nav>
+      </>
   );
 };
 
