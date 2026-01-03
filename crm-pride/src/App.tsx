@@ -131,7 +131,7 @@ const App: React.FC = () => {
   // ======================================================
   return (
     <HashRouter>
-      <Layout />
+      <Layout>
         <Routes>
           <Route path="/" element={<Schedule />} />
           <Route path="/rating" element={<Rating />} />
@@ -140,6 +140,7 @@ const App: React.FC = () => {
           <Route path="/support" element={<Support />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
+      </Layout>
     </HashRouter>
   );
 };
