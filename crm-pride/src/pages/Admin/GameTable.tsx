@@ -83,7 +83,6 @@ export default function GamesTable() {
   const [loading, setLoading] = useState(true);
   const [edit, setEdit] = useState<any | null>(null);
   const [createMode, setCreateMode] = useState(false);
-  const [deleteGame, setDeleteGame] = useState<any | null>(null);
 
   const [openGameId, setOpenGameId] = useState<number | null>(null);
 
@@ -116,11 +115,11 @@ export default function GamesTable() {
     close();
   };
 
-  const remove = async () => {
+  const remove = async (g: any) => {
     if (!confirm("Удалить игру?")) return;
     
     try {
-      await api.delete(`/games/${deleteGame.game_id}/`);
+      await api.delete(`/games/${g.game_id}/`);
       await load();
     } catch (error) {
       console.error('Ошибка при удалении:', error);
@@ -187,7 +186,7 @@ export default function GamesTable() {
                   <Btn onClick={() => openEdit(g)} style={{ marginLeft: 8 }}>
                     Изменить
                   </Btn>
-                  <Btn onClick={() => remove()} style={{ marginLeft: 8 }}>
+                  <Btn onClick={() => remove(g)} style={{ marginLeft: 8 }}>
                     Удалить
                   </Btn>
                 </td>
