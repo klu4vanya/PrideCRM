@@ -20,6 +20,8 @@ const Modal = styled.div`
   padding: 20px;
   border-radius: 12px;
   min-width: 300px;
+  display: flex;
+  flex-direction: column;
 `;
 
 interface Props {
