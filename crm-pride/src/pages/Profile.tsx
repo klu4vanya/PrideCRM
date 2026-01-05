@@ -163,6 +163,7 @@ const Profile: React.FC = () => {
       alert("Профиль успешно обновлен!");
     } catch (error) {
       alert("Ошибка при обновлении профиля");
+      console.log("ошибка", error)
     }
   };
   if (!profile) return <div>{profile}</div>;

@@ -226,7 +226,8 @@ class GameViewSet(viewsets.ModelViewSet):
         return GameSerializer
     
     def perform_destroy(self, instance):
-        instance.is_active = False
+        # instance.is_active = False
+        instance.delete()
         instance.save()
     
     @action(detail=True, methods=['get'])
