@@ -29,7 +29,7 @@ class Users(AbstractBaseUser, PermissionsMixin):
     date_of_birth = models.DateField(blank=True, null=True)
     
     # Статистика
-    points = models.IntegerField(default=0)
+    points = models.IntegerField(default=0, null=True)
     total_games_played = models.IntegerField(default=0)
     
     # Флаги
