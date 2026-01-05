@@ -228,7 +228,7 @@ class GameViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         # instance.is_active = False
         instance.delete()
-        instance.save()
+        # instance.save()
     
     @action(detail=True, methods=['get'])
     def participants_admin(self, request, pk=None):
