@@ -8,7 +8,7 @@ const Overlay = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -20,6 +20,9 @@ const Modal = styled.div`
   padding: 20px;
   border-radius: 12px;
   min-width: 300px;
+`;
+const LabelContainer = styled.div`
+  width: 70%;
   display: flex;
   flex-direction: column;
 `;
@@ -51,33 +54,37 @@ const UserEditModal: React.FC<Props> = ({ user, onClose, onSave }) => {
     <Overlay>
       <Modal>
         <h3>Редактировать пользователя</h3>
-
-        <label>Имя</label>
-        <input
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-        />
-
-        <label>Фамилия</label>
-        <input
-          value={form.last_name}
-          onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-        />
-
-        <label>Имя</label>
-        <input
-          value={form.first_name}
-          onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-        />
-
-        <label>Email</label>
-        <input
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-        />
-
-        <br /><br />
+        <LabelContainer>
+          <label>Имя</label>
+          <input
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+          />
+        </LabelContainer>
+        <LabelContainer>
+          <label>Фамилия</label>
+          <input
+            value={form.last_name}
+            onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+          />
+        </LabelContainer>
+        <LabelContainer>
+          <label>Имя</label>
+          <input
+            value={form.first_name}
+            onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+          />
+        </LabelContainer>
+        <LabelContainer>
+          <label>Email</label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+        </LabelContainer>
+        <br />
+        <br />
 
         <button onClick={update}>Сохранить</button>
         <button onClick={onClose} style={{ marginLeft: 10 }}>
