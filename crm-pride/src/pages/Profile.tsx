@@ -106,7 +106,7 @@ const Profile: React.FC = () => {
     phone_number: "",
     email: "",
     date_of_birth: "",
-    points: "",
+    points: 0,
   });
 
   const { initData } = useTelegram();
