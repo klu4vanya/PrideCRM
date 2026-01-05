@@ -106,7 +106,7 @@ const Profile: React.FC = () => {
     phone_number: "",
     email: "",
     date_of_birth: "",
-    points: 0,
+    points: "",
   });
 
   const { initData } = useTelegram();
@@ -146,7 +146,7 @@ const Profile: React.FC = () => {
         phone_number: response.data.user.phone_number || "",
         email: response.data.user.email || "",
         date_of_birth: response.data.user.date_of_birth || "",
-        points: response.data.user.points || "",
+        points: response.data.user.points || 0,
       });
       console.log("form data:", formData);
     } catch (error: any) {
