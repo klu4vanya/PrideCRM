@@ -109,10 +109,17 @@ interface Game {
     user: {
       user_id: string;
       username: string;
-      first_name: string;
-      last_name: string;
+      first_name?: string;
+      last_name?: string;
     };
   }>;
+}
+
+interface UserData {
+  user_id: string;
+  username: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 const Game_test: Game = {
@@ -131,8 +138,35 @@ const Schedule: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { initData } = useTelegram();
   const [authError, setAuthError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [registeringGameId, setRegisteringGameId] = useState<number | null>(null);
   const [unregisteringGameId, setUnregisteringGameId] = useState<number | null>(null);
+
+  // Получаем данные текущего пользователя
+  const getCurrentUser = (): UserData | null => {
+    if (currentUser) return currentUser;
+    
+    try {
+      const userData = localStorage.getItem('user_data');
+      if (userData) {
+        return JSON.parse(userData);
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+    
+    return null;
+  };
+
+  // Проверяем, зарегистрирован ли пользователь на игру
+  const isUserRegistered = (game: Game): boolean => {
+    const user = getCurrentUser();
+    if (!user || !game.participants_details) return false;
+    
+    return game.participants_details.some(
+      participant => participant.user.user_id === user.user_id
+    );
+  };
 
   useEffect(() => {
     const authenticateAndLoadProfile = async () => {
@@ -146,6 +180,20 @@ const Schedule: React.FC = () => {
           if (authResponse.data.token) {
             localStorage.setItem("auth_token", authResponse.data.token);
             console.log("🔑 Token saved");
+
+            // Сохраняем данные пользователя
+            if (authResponse.data.user) {
+              const userData: UserData = {
+                user_id: authResponse.data.user.telegram_id || 
+                         authResponse.data.user.id || 
+                         authResponse.data.user.user_id,
+                username: authResponse.data.user.username || `user_${authResponse.data.user.id}`,
+                first_name: authResponse.data.user.first_name,
+                last_name: authResponse.data.user.last_name
+              };
+              setCurrentUser(userData);
+              localStorage.setItem('user_data', JSON.stringify(userData));
+            }
 
             await loadGames();
           }
@@ -162,7 +210,7 @@ const Schedule: React.FC = () => {
       }
     };
     authenticateAndLoadProfile();
-  }, [initData, authError]);
+  }, [initData]);
 
   const loadGames = async () => {
     try {
@@ -176,84 +224,31 @@ const Schedule: React.FC = () => {
     }
   };
 
-  // Функция проверки, зарегистрирован ли текущий пользователь на игру
-  const isUserRegistered = (game: Game): boolean => {
-    // Здесь нужно получить ID текущего пользователя
-    // Предположим, что у вас есть способ получить user_id
-    const currentUserId = localStorage.getItem('user_id') || ''; // Нужно адаптировать под вашу логику
-    
-    if (!game.participants_details || !currentUserId) {
-      return false;
-    }
-    
-    return game.participants_details.some(
-      (participant) => participant.user.user_id === currentUserId
-    );
-  };
+  const handleRegistration = (gameId: number, isCurrentlyRegistered: boolean) => async () => {
+    if (isCurrentlyRegistered) {
+      if (!window.confirm("Вы уверены, что хотите отменить регистрацию?")) return;
 
-  const handleRegister = async (gameId: number) => {
-    setRegisteringGameId(gameId);
-    try {
-      await gamesAPI.registerForGame(gameId);
-      alert("Успешно зарегистрировались на игру!");
-      
-      // Обновляем состояние игры
-      setGames(prevGames => 
-        prevGames.map(game => {
-          if (game.game_id === gameId) {
-            // Здесь нужно обновить participants_details, если API возвращает обновленную игру
-            return {
-              ...game,
-              participants_count: game.participants_count + 1,
-              // Добавить текущего пользователя в participants_details
-            };
-          }
-          return game;
-        })
-      );
-      
-    } catch (error: any) {
-      alert(error.response?.data?.error || "Ошибка регистрации");
-    } finally {
-      setRegisteringGameId(null);
-    }
-  };
-
-  const handleDiscardRegister = async (gameId: number) => {
-    setUnregisteringGameId(gameId);
-    try {
-      await gamesAPI.discardRegisterForGame(gameId);
-      alert("Успешно отменили запись на игру!");
-      
-      // Обновляем состояние игры
-      setGames(prevGames => 
-        prevGames.map(game => {
-          if (game.game_id === gameId) {
-            return {
-              ...game,
-              participants_count: Math.max(0, game.participants_count - 1),
-              // Удалить текущего пользователя из participants_details
-            };
-          }
-          return game;
-        })
-      );
-      
-    } catch (error: any) {
-      alert(error.response?.data?.error || "Ошибка отмены регистрации");
-    } finally {
-      setUnregisteringGameId(null);
-    }
-  };
-
-  // Создаем обработчики для каждой игры
-  const createRegisterHandler = (gameId: number) => () => {
-    handleRegister(gameId);
-  };
-
-  const createUnregisterHandler = (gameId: number) => () => {
-    if (window.confirm("Вы уверены, что хотите отменить регистрацию?")) {
-      handleDiscardRegister(gameId);
+      try {
+        setUnregisteringGameId(gameId);
+        await gamesAPI.discardRegisterForGame(gameId);
+        alert("Успешно отменили запись на игру!");
+        await loadGames();
+      } catch (error: any) {
+        alert(error.response?.data?.error || "Ошибка отмены регистрации");
+      } finally {
+        setUnregisteringGameId(null);
+      }
+    } else {
+      try {
+        setRegisteringGameId(gameId);
+        await gamesAPI.registerForGame(gameId);
+        alert("Успешно зарегистрировались на игру!");
+        await loadGames();
+      } catch (error: any) {
+        alert(error.response?.data?.error || "Ошибка регистрации");
+      } finally {
+        setRegisteringGameId(null);
+      }
     }
   };
 
@@ -269,7 +264,7 @@ const Schedule: React.FC = () => {
       </ScheduleContainer>
       <GamesList>
         {games.map((game) => {
-          const userIsRegistered = isUserRegistered(game);
+          const userRegistered = isUserRegistered(game);
           const isLoading = registeringGameId === game.game_id || unregisteringGameId === game.game_id;
           
           return (
@@ -298,22 +293,21 @@ const Schedule: React.FC = () => {
                   <GameInfo>Всего очков</GameInfo>
                   <GameHeader>320</GameHeader>
                 </PrizeFoundContainer>
-                <RegisterButton 
-                  onClick={userIsRegistered 
-                    ? createUnregisterHandler(game.game_id)
-                    : createRegisterHandler(game.game_id)
-                  }
-                  disabled={isLoading}
+                <RegisterButton
+                  onClick={handleRegistration(game.game_id, userRegistered)}
+                  disabled={isLoading || !currentUser}
                   style={{
-                    background: userIsRegistered ? '#ff4757' : 'rgb(249, 79, 0)'
+                    background: userRegistered ? "#ff4757" : "rgb(249, 79, 0)",
+                    opacity: !currentUser ? 0.5 : 1
                   }}
                 >
-                  {isLoading 
-                    ? "Загрузка..." 
-                    : userIsRegistered 
-                      ? "Отмена регистрации" 
-                      : "Зарегистрироваться"
-                  }
+                  {isLoading
+                    ? "Загрузка..."
+                    : !currentUser
+                    ? "Войдите в аккаунт"
+                    : userRegistered
+                    ? "Отмена регистрации"
+                    : "Зарегистрироваться"}
                 </RegisterButton>
               </PrizeAndButtonContainer>
             </GameCard>
