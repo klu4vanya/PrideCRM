@@ -356,6 +356,26 @@ class ParticipantViewSet(viewsets.ModelViewSet):
             return Response({"status": "registered"}, status=201)
         else:
             return Response({"status": "already registered"})
+        
+    @action(detail=False, methods=['delete'])
+    def unregister(self, request):
+        """Отмена регистрации на игру через DELETE"""
+        game_id = request.data.get('game_id')
+        
+        try:
+            game = Games.objects.get(pk=game_id, is_active=True)
+        except Games.DoesNotExist:
+            return Response({"error": "Game not found"}, status=404)
+        
+        try:
+            participant = Participant.objects.get(
+                user=request.user,
+                game=game
+            )
+            participant.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Participant.DoesNotExist:
+            return Response({"error": "Not registered for this game"}, status=404)
 
 class RatingView(APIView):
     permission_classes = [IsAuthenticated]

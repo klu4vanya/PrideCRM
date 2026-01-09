@@ -77,10 +77,10 @@ const PrizeFoundContainer = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-`
+`;
 
-const RegisterButton = styled.button<{ registered: boolean }>`
-  background: ${(props) => (props.registered ? "#4CAF50" : "rgb(249, 79, 0)")};
+const RegisterButton = styled.button`
+  background: rgb(249, 79, 0);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -119,6 +119,7 @@ const Schedule: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { initData } = useTelegram();
   const [authError, setAuthError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState<boolean>(false);
 
   useEffect(() => {
     const authenticateAndLoadProfile = async () => {
@@ -166,9 +167,20 @@ const Schedule: React.FC = () => {
     try {
       await gamesAPI.registerForGame(gameId);
       alert("Успешно зарегистрировались на игру!");
+      setRegistered(true);
       loadGames(); // Перезагружаем список
     } catch (error: any) {
       alert(error.response?.data?.error || "Ошибка регистрации");
+    }
+  };
+  const handleDiscardRegister = async (gameId: number) => {
+    try {
+      await gamesAPI.discardRegisterForGame(gameId);
+      alert("Успешно отменили запись на игру!");
+      setRegistered(false);
+      loadGames(); // Перезагружаем список
+    } catch (error: any) {
+      alert(error.response?.data?.error || "Ошибка отмены регистрации");
     }
   };
 
@@ -206,18 +218,11 @@ const Schedule: React.FC = () => {
             </GameDataContainer>
             <PrizeAndButtonContainer>
               <PrizeFoundContainer>
-                <GameInfo>
-                  Всего очков
-                </GameInfo>
-                <GameHeader>
-                  320
-                </GameHeader>
+                <GameInfo>Всего очков</GameInfo>
+                <GameHeader>320</GameHeader>
               </PrizeFoundContainer>
-              <RegisterButton
-                registered={false}
-                onClick={() => handleRegister(game.game_id)}
-              >
-                Зарегистрироваться
+              <RegisterButton onClick={() => handleRegister(game.game_id)}>
+                {registered ? "Зарегистрироваться" : "Отмена регистрации"}
               </RegisterButton>
             </PrizeAndButtonContainer>
           </GameCard>

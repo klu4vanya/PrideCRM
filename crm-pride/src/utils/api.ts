@@ -44,6 +44,8 @@ export const gamesAPI = {
   getGame: (id: number) => api.get(`/games/${id}/`),
   registerForGame: (gameId: number) => 
     api.post('/participants/register/', { game_id: gameId }),
+  discardRegisterForGame: (gameId: number) => 
+    api.delete('/participants/unregister/', { data: { game_id: gameId } }),
 };
 
 export const ratingAPI = {
