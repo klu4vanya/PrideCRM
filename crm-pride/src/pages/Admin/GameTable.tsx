@@ -41,6 +41,8 @@ const ModalBg = styled.div`
 `;
 
 const Modal = styled.div`
+  display: grid;
+  gap: 5px;
   background: white;
   color: black;
   padding: 20px;
@@ -286,7 +288,7 @@ export default function GamesTable() {
               <Btn onClick={save}>Сохранить</Btn>
             )}
 
-            <Btn onClick={close} style={{ marginLeft: 10 }}>
+            <Btn onClick={close}>
               Отмена
             </Btn>
           </Modal>
