@@ -10,7 +10,7 @@ import { ReactComponent as User } from "../assets/user.svg";
 export const ScheduleContainer = styled.div`
   padding: 20px;
   height: 16%;
-  background-color: rgb(234, 50, 0);
+  background-color: #E0A65D;
 `;
 export const Title = styled.div`
   display: flex;
