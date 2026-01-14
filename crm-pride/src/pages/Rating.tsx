@@ -16,7 +16,7 @@ const TopPlayersContainer = styled.div`
 const TopPlayerInfoContainer = styled.div`
   width: 35%;
   height: 100px;
-  border: 3px solid #FFF0B1;
+  border: 3px solid rgb(45, 45, 50);
   background-color: rgb(19, 19, 21);
   border-radius: 10px 10px 0 0;
   display: flex;
