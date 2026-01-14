@@ -16,7 +16,7 @@ const TopPlayersContainer = styled.div`
 const TopPlayerInfoContainer = styled.div`
   width: 35%;
   height: 100px;
-  border: 3px solid rgb(45, 45, 50);
+  border: 3px solid #FFF0B1;
   background-color: rgb(19, 19, 21);
   border-radius: 10px 10px 0 0;
   display: flex;
@@ -157,7 +157,7 @@ const Rating: React.FC = () => {
         </TopPlayerInfoContainer>
         <TopPlayerInfoContainer
           style={{
-            backgroundColor: "rgb(213, 43, 0)",
+            backgroundColor: "#E0A65D",
             height: "150px",
           }}
         >
