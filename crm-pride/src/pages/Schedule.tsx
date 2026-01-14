@@ -39,7 +39,7 @@ const GameDataContainer = styled.div`
 const GameCard = styled.div`
   padding: 16px;
   border-radius: 10px;
-  background: rgb(19, 19, 21);
+  background: #282c34;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 `;
 
