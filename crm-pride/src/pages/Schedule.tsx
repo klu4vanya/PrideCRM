@@ -57,7 +57,7 @@ const GameInfo = styled.div`
   margin: 4px 0;
   color: #9f9fa9;
   svg {
-    color: rgb(249, 79, 0);
+    color: #E0A65D;
   }
 `;
 
@@ -79,7 +79,7 @@ const PrizeFoundContainer = styled.div`
 `;
 
 const RegisterButton = styled.button`
-  background: rgb(249, 79, 0);
+  background: #E0A65D;
   color: white;
   border: none;
   padding: 10px 20px;
