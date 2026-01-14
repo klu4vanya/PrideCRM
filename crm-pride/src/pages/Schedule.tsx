@@ -297,7 +297,7 @@ const Schedule: React.FC = () => {
                   onClick={handleRegistration(game.game_id, userRegistered)}
                   disabled={isLoading || !currentUser}
                   style={{
-                    background: userRegistered ?  "#d07405" : "#E0A65D",
+                    background: userRegistered ?  "#d03f05" : "#E0A65D",
                     opacity: !currentUser ? 0.5 : 1
                   }}
                 >
