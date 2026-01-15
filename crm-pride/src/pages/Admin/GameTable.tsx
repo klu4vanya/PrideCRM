@@ -85,7 +85,7 @@ const Btn = styled.button`
 
 const CompleteBtn = styled(Btn)`
   background: linear-gradient(145deg, #4caf50, #388e3c);
-  
+
   &:hover {
     background: linear-gradient(145deg, #66bb6a, #4caf50);
   }
@@ -93,17 +93,17 @@ const CompleteBtn = styled(Btn)`
 
 const DeleteBtn = styled(Btn)`
   background: linear-gradient(145deg, #d32f2f, #b71c1c);
-  
+
   &:hover {
     background: linear-gradient(145deg, #f44336, #c62828);
   }
 `;
 
 const ManageBtn = styled(Btn)`
-  background: linear-gradient(145deg, #2196F3, #1976D2);
-  
+  background: linear-gradient(145deg, #2196f3, #1976d2);
+
   &:hover {
-    background: linear-gradient(145deg, #42A5F5, #2196F3);
+    background: linear-gradient(145deg, #42a5f5, #2196f3);
   }
 `;
 
@@ -116,7 +116,7 @@ const ParticipantCard = styled.div`
   transition: border-color 0.3s;
 
   &.saving {
-    border-color: #2196F3;
+    border-color: #2196f3;
   }
 
   &.saved {
@@ -137,7 +137,7 @@ const CounterBtn = styled.button`
   height: 30px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(145deg, #2196F3, #1976D2);
+  background: linear-gradient(145deg, #2196f3, #1976d2);
   color: white;
   font-size: 18px;
   font-weight: bold;
@@ -148,7 +148,7 @@ const CounterBtn = styled.button`
   justify-content: center;
 
   &:hover {
-    background: linear-gradient(145deg, #42A5F5, #2196F3);
+    background: linear-gradient(145deg, #42a5f5, #2196f3);
     transform: scale(1.1);
   }
 
@@ -187,20 +187,26 @@ const SaveIndicator = styled.span<{ visible: boolean }>`
   font-size: 12px;
   color: #4caf50;
   margin-left: 10px;
-  opacity: ${props => props.visible ? 1 : 0};
+  opacity: ${(props) => (props.visible ? 1 : 0)};
   transition: opacity 0.3s;
 `;
 
 interface ParticipantData {
   id: number;
-  user: {
+  user: string; // это user_id
+  user_info: {
     user_id: string;
-    first_name: string;
     username: string;
+    first_name: string;
+    last_name: string;
   };
   entries: number;
   rebuys: number;
   addons: number;
+  position: number | null;
+  final_points: number;
+  joined_at: string;
+  game: number;
 }
 
 export default function GamesTable() {
@@ -279,7 +285,7 @@ export default function GamesTable() {
     try {
       const res = await api.get(`/games/${game.game_id}/participants_admin/`);
       setParticipants(res.data);
-      console.log("данные пользователей",res.data)
+      console.log("данные пользователей", res.data);
       setManageMode(game);
     } catch (error) {
       console.error("Ошибка загрузки участников:", error);
@@ -295,9 +301,7 @@ export default function GamesTable() {
   ) => {
     // Обновляем локальное состояние
     setParticipants((prev) =>
-      prev.map((p) =>
-        p.id === participantId ? { ...p, [field]: value } : p
-      )
+      prev.map((p) => (p.id === participantId ? { ...p, [field]: value } : p))
     );
 
     // Показываем индикатор сохранения
@@ -342,11 +346,19 @@ export default function GamesTable() {
     }
   };
 
-  const incrementValue = (participantId: number, field: string, currentValue: number) => {
+  const incrementValue = (
+    participantId: number,
+    field: string,
+    currentValue: number
+  ) => {
     updateParticipant(participantId, field, currentValue + 1);
   };
 
-  const decrementValue = (participantId: number, field: string, currentValue: number) => {
+  const decrementValue = (
+    participantId: number,
+    field: string,
+    currentValue: number
+  ) => {
     if (currentValue > 0) {
       updateParticipant(participantId, field, currentValue - 1);
     }
@@ -357,7 +369,9 @@ export default function GamesTable() {
     const buyin = Number(manageMode.buyin) || 0;
     const reentryBuyin = Number(manageMode.reentry_buyin) || buyin;
 
-    return p.entries * buyin + p.rebuys * reentryBuyin + p.addons * reentryBuyin;
+    return (
+      p.entries * buyin + p.rebuys * reentryBuyin + p.addons * reentryBuyin
+    );
   };
 
   const calculateGameTotal = () => {
@@ -366,28 +380,28 @@ export default function GamesTable() {
 
   const completeGame = async () => {
     if (!manageMode) return;
-
+  
     if (
       !window.confirm(
         "Завершить турнир? После этого он будет перенесен в историю и станет недоступен для изменений."
       )
     )
       return;
-
+  
     try {
       // Формируем данные участников для истории
       const participantsData = participants.map((p) => ({
-        user_id: p.user.user_id,
+        user_id: p.user_info.user_id, // Используем user_info вместо user
         entries: p.entries,
         rebuys: p.rebuys,
         addons: p.addons,
       }));
-
+  
       // Завершаем игру и создаем запись в истории
       await api.post(`/games/${manageMode.game_id}/complete/`, {
         participants: participantsData,
       });
-
+  
       alert("Турнир успешно завершен и добавлен в историю!");
       await load();
       close();
@@ -535,10 +549,17 @@ export default function GamesTable() {
                     : ""
                 }
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <div>
                     <b>
-                      {p.user.first_name} (@{p.user.username})
+                      {p.user_info?.first_name || "Неизвестный"}
+                      {p.user_info?.username && ` (@${p.user_info.username})`}
                     </b>
                   </div>
                   <SaveIndicator visible={savingIds.has(p.id)}>
@@ -611,9 +632,7 @@ export default function GamesTable() {
 
             <br />
 
-            <CompleteBtn onClick={completeGame}>
-              Завершить турнир
-            </CompleteBtn>
+            <CompleteBtn onClick={completeGame}>Завершить турнир</CompleteBtn>
 
             <Btn onClick={close}>Закрыть</Btn>
           </Modal>
@@ -643,7 +662,9 @@ export default function GamesTable() {
             <label>Описание</label>
             <input
               value={edit.description || ""}
-              onChange={(e) => setEdit({ ...edit, description: e.target.value })}
+              onChange={(e) =>
+                setEdit({ ...edit, description: e.target.value })
+              }
             />
 
             <label>Buy-in</label>
