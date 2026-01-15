@@ -219,7 +219,7 @@ const PaymentGroup = styled.div`
 
 interface ParticipantData {
   id: number;
-  user: string; // это user_id
+  user: string;
   user_info: {
     user_id: string;
     username: string;
@@ -229,7 +229,6 @@ interface ParticipantData {
   entries: number;
   rebuys: number;
   addons: number;
-  position: number | null;
   final_points: number;
   joined_at: string;
   game: number;
