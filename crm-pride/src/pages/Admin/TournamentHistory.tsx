@@ -13,8 +13,10 @@ const Card = styled.div`
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-  h3, b, p{
-    color: #000
+  h3,
+  b,
+  p {
+    color: #000;
   }
 `;
 
@@ -28,7 +30,7 @@ const Table = styled.table`
     padding: 10px;
     border-bottom: 1px solid #e0e0e0;
     text-align: left;
-    color: #000
+    color: #000;
   }
 
   th {
@@ -71,13 +73,13 @@ const SummaryCard = styled.div`
   background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
   padding: 15px;
   border-radius: 8px;
-  
+
   h4 {
     margin: 0 0 8px 0;
     color: #666;
     font-size: 14px;
   }
-  
+
   p {
     margin: 0;
     font-size: 24px;
@@ -109,8 +111,8 @@ interface Participant {
   rebuys: number;
   addons: number;
   total_spent: number;
-  position?: number;
-  prize: number;
+  payment_method_display: number
+  payment_method: string
 }
 
 export default function TournamentHistory() {
@@ -131,7 +133,9 @@ export default function TournamentHistory() {
 
   const loadParticipants = async (tournamentId: number) => {
     try {
-      const res = await api.get(`/tournament-history/${tournamentId}/participants/`);
+      const res = await api.get(
+        `/tournament-history/${tournamentId}/participants/`
+      );
       setTournaments((prev) =>
         prev.map((t) =>
           t.id === tournamentId ? { ...t, participants: res.data } : t
@@ -164,13 +168,17 @@ export default function TournamentHistory() {
     <Container>
       <h2>История турниров</h2>
 
-      {tournaments.length === 0 && (
-        <p>Нет завершенных турниров</p>
-      )}
+      {tournaments.length === 0 && <p>Нет завершенных турниров</p>}
 
       {tournaments.map((tournament) => (
         <Card key={tournament.id}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "start",
+            }}
+          >
             <div>
               <h3>{tournament.tournament_name}</h3>
               <p>
@@ -206,6 +214,7 @@ export default function TournamentHistory() {
                     <th>Входы</th>
                     <th>Ребаи</th>
                     <th>Аддоны</th>
+                    <th>Метод оплаты</th>
                     <th>Всего потрачено</th>
                   </tr>
                 </thead>
@@ -218,7 +227,25 @@ export default function TournamentHistory() {
                       <td>{p.entries}</td>
                       <td>{p.rebuys}</td>
                       <td>{p.addons}</td>
-                      <td><b>{p.total_spent} ₽</b></td>
+                      <td>
+                        {p.payment_method ? (
+                          <span
+                            style={{
+                              padding: "4px 8px",
+                              background: "#e3f2fd",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                            }}
+                          >
+                            {p.payment_method_display || p.payment_method}
+                          </span>
+                        ) : (
+                          <span style={{ color: "#999" }}>Не указан</span>
+                        )}
+                      </td>
+                      <td>
+                        <b>{p.total_spent} ₽</b>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

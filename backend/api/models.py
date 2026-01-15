@@ -142,6 +142,14 @@ class TournamentHistory(models.Model):
 
 class TournamentParticipant(models.Model):
     """Участник завершенного турнира"""
+    
+    PAYMENT_METHODS = [
+        ('cash_ivan', 'Наличные Иван'),
+        ('cash_petr', 'Наличные Петр'),
+        ('qr_code', 'QR код'),
+        ('card', 'Картой'),
+    ]
+    
     tournament_history = models.ForeignKey(
         TournamentHistory,
         on_delete=models.CASCADE,
@@ -160,8 +168,14 @@ class TournamentParticipant(models.Model):
     addons = models.IntegerField(default=0, help_text="Количество аддонов")
     
     total_spent = models.IntegerField(default=0, help_text="Всего потрачено")
-    position = models.IntegerField(null=True, blank=True, help_text="Место в турнире")
-    prize = models.IntegerField(default=0, help_text="Выигрыш")
+    
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHODS,
+        null=True,
+        blank=True,
+        help_text="Метод оплаты"
+    )
     
     class Meta:
         ordering = ['position']

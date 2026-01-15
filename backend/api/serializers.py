@@ -116,12 +116,16 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'created_at', 'updated_at']
         
 class TournamentParticipantSerializer(serializers.ModelSerializer):
+    payment_method_display = serializers.CharField(
+        source='get_payment_method_display', 
+        read_only=True
+    )
+    
     class Meta:
         model = TournamentParticipant
         fields = [
             'id', 'user_id', 'username', 'first_name', 'last_name',
-            'entries', 'rebuys', 'addons', 'total_spent',
-            'position', 'prize'
+            'entries', 'rebuys', 'addons', 'total_spent', 'payment_method', 'payment_method_display'
         ]
 
 

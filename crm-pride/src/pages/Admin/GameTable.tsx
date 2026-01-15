@@ -191,6 +191,32 @@ const SaveIndicator = styled.span<{ visible: boolean }>`
   transition: opacity 0.3s;
 `;
 
+const Select = styled.select`
+  padding: 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: #2196F3;
+  }
+
+  &:not(:invalid) {
+    border-color: #4caf50;
+  }
+`;
+
+const PaymentGroup = styled.div`
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+`;
+
 interface ParticipantData {
   id: number;
   user: string; // это user_id
@@ -218,8 +244,16 @@ export default function GamesTable() {
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+  const [paymentMethods, setPaymentMethods] = useState<Map<number, string>>(new Map());
 
   const [openGameId, setOpenGameId] = useState<number | null>(null);
+
+  const PAYMENT_OPTIONS = [
+    { value: 'cash_ivan', label: 'Наличные Иван' },
+    { value: 'cash_petr', label: 'Наличные Петр' },
+    { value: 'qr_code', label: 'QR код' },
+    { value: 'card', label: 'Картой' },
+  ];
 
   const load = async () => {
     setLoading(true);
@@ -245,6 +279,7 @@ export default function GamesTable() {
     setParticipants([]);
     setSavingIds(new Set());
     setSavedIds(new Set());
+    setPaymentMethods(new Map());
   };
 
   const save = async () => {
@@ -285,12 +320,26 @@ export default function GamesTable() {
     try {
       const res = await api.get(`/games/${game.game_id}/participants_admin/`);
       setParticipants(res.data);
-      console.log("данные пользователей", res.data);
       setManageMode(game);
+      const methods = new Map<number, string>();
+      res.data.forEach((p: any) => {
+        if (p.payment_method) {
+          methods.set(p.id, p.payment_method);
+        }
+      });
+      setPaymentMethods(methods);
     } catch (error) {
       console.error("Ошибка загрузки участников:", error);
       alert("Не удалось загрузить участников");
     }
+  };
+
+  const updatePaymentMethod = (participantId: number, method: string) => {
+    setPaymentMethods(prev => {
+      const newMap = new Map(prev);
+      newMap.set(participantId, method);
+      return newMap;
+    });
   };
 
   // Автосохранение при изменении данных участника
@@ -380,7 +429,14 @@ export default function GamesTable() {
 
   const completeGame = async () => {
     if (!manageMode) return;
-  
+    const missingPayment = participants.some(p => !paymentMethods.get(p.id));
+    if (missingPayment) {
+      if (!window.confirm(
+        "Не у всех участников указан метод оплаты. Продолжить завершение турнира?"
+      )) {
+        return;
+      }
+    }
     if (
       !window.confirm(
         "Завершить турнир? После этого он будет перенесен в историю и станет недоступен для изменений."
@@ -395,6 +451,7 @@ export default function GamesTable() {
         entries: p.entries,
         rebuys: p.rebuys,
         addons: p.addons,
+        payment_method: paymentMethods.get(p.id) || null,
       }));
   
       // Завершаем игру и создаем запись в истории

@@ -335,7 +335,7 @@ class GameViewSet(viewsets.ModelViewSet):
             
             # Создаем записи участников
             for p_data in participants_data:
-                user = Users.objects.get(pk=p_data['user_id'])
+                user = Users.objects.get(user_id=p_data['user_id'])
                 
                 entries = p_data.get('entries', 1)
                 rebuys = p_data.get('rebuys', 0)
@@ -360,7 +360,8 @@ class GameViewSet(viewsets.ModelViewSet):
                     addons=addons,
                     total_spent=total_spent,
                     position=p_data.get('position'),
-                    prize=p_data.get('prize', 0)
+                    prize=p_data.get('prize', 0),
+                    payment_method=p_data.get('payment_method')  # Сохраняем метод оплаты
                 )
             
             # Обновляем общую выручку
@@ -382,6 +383,7 @@ class GameViewSet(viewsets.ModelViewSet):
                 {"error": f"Failed to complete game: {str(e)}"}, 
                 status=500
             )
+            
     
     @action(detail=True, methods=['post'])
     def update_participant_admin(self, request, pk=None):
