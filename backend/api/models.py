@@ -109,3 +109,64 @@ class SupportTicket(models.Model):
     class Meta:
         db_table = 'support_tickets'
         ordering = ['-created_at']
+
+
+class TournamentHistory(models.Model):
+    """История завершенных турниров"""
+    game = models.OneToOneField(
+        Games, 
+        on_delete=models.CASCADE,
+        related_name='history',
+        help_text="Связь с завершенной игрой"
+    )
+    date = models.DateField(help_text="Дата проведения турнира")
+    time = models.TimeField(null=True, blank=True, help_text="Время начала")
+    tournament_name = models.CharField(max_length=255, help_text="Название турнира")
+    location = models.CharField(max_length=255, help_text="Локация")
+    buyin = models.IntegerField(help_text="Buy-in")
+    reentry_buyin = models.IntegerField(null=True, blank=True, help_text="Re-entry buy-in")
+    
+    total_revenue = models.IntegerField(default=0, help_text="Общая выручка")
+    participants_count = models.IntegerField(default=0, help_text="Количество участников")
+    
+    completed_at = models.DateTimeField(auto_now_add=True, help_text="Дата завершения")
+    
+    class Meta:
+        ordering = ['-date', '-time']
+        verbose_name = "История турнира"
+        verbose_name_plural = "История турниров"
+    
+    def __str__(self):
+        return f"{self.tournament_name} - {self.date}"
+
+
+class TournamentParticipant(models.Model):
+    """Участник завершенного турнира"""
+    tournament_history = models.ForeignKey(
+        TournamentHistory,
+        on_delete=models.CASCADE,
+        related_name='participants'
+    )
+    
+    # Сохраняем данные игрока на момент турнира
+    user_id = models.CharField(max_length=100, help_text="Telegram ID")
+    username = models.CharField(max_length=100, help_text="Username")
+    first_name = models.CharField(max_length=100, help_text="Имя")
+    last_name = models.CharField(max_length=100, blank=True, help_text="Фамилия")
+    
+    # Статистика
+    entries = models.IntegerField(default=1, help_text="Количество входов")
+    rebuys = models.IntegerField(default=0, help_text="Количество ребаев")
+    addons = models.IntegerField(default=0, help_text="Количество аддонов")
+    
+    total_spent = models.IntegerField(default=0, help_text="Всего потрачено")
+    position = models.IntegerField(null=True, blank=True, help_text="Место в турнире")
+    prize = models.IntegerField(default=0, help_text="Выигрыш")
+    
+    class Meta:
+        ordering = ['position']
+        verbose_name = "Участник турнира"
+        verbose_name_plural = "Участники турнира"
+    
+    def __str__(self):
+        return f"{self.first_name} ({self.username}) - {self.tournament_history.tournament_name}"

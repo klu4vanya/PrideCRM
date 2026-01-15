@@ -7,6 +7,7 @@ router.register(r'users', UserViewSet, 'users')
 router.register(r'games', GameViewSet, 'games')
 router.register(r'participants', ParticipantViewSet, 'participants')
 router.register(r'support-tickets', SupportTicketViewSet, 'support-tickets')
+router.register(r'tournament-history', TournamentHistoryViewSet, basename='tournament-history')
 
 urlpatterns = [
     path('', include(router.urls)),

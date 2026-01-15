@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Users, Games, Participant, SupportTicket
+from .models import TournamentHistory, TournamentParticipant, Users, Games, Participant, SupportTicket
 
 # -------------------
 # Пользователи
@@ -114,3 +114,35 @@ class SupportTicketSerializer(serializers.ModelSerializer):
         model = SupportTicket
         fields = '__all__'
         read_only_fields = ['user', 'created_at', 'updated_at']
+        
+class TournamentParticipantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TournamentParticipant
+        fields = [
+            'id', 'user_id', 'username', 'first_name', 'last_name',
+            'entries', 'rebuys', 'addons', 'total_spent',
+            'position', 'prize'
+        ]
+
+
+class TournamentHistorySerializer(serializers.ModelSerializer):
+    participants = TournamentParticipantSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = TournamentHistory
+        fields = [
+            'id', 'game', 'date', 'time', 'tournament_name', 'location',
+            'buyin', 'reentry_buyin', 'total_revenue', 'participants_count',
+            'completed_at', 'participants'
+        ]
+        read_only_fields = ['completed_at']
+
+
+class TournamentHistoryListSerializer(serializers.ModelSerializer):
+    """Упрощенный сериализатор для списка"""
+    class Meta:
+        model = TournamentHistory
+        fields = [
+            'id', 'date', 'time', 'tournament_name', 'location',
+            'participants_count', 'total_revenue', 'completed_at'
+        ]

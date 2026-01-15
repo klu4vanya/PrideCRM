@@ -211,6 +211,25 @@ class UserViewSet(viewsets.ModelViewSet):
             })
         except ValueError:
             return Response({"error": "Invalid points value"}, status=400)
+        
+class TournamentHistoryViewSet(viewsets.ModelViewSet):
+    """История завершенных турниров"""
+    permission_classes = [IsAdminUser]
+    queryset = TournamentHistory.objects.all()
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return TournamentHistoryListSerializer
+        return TournamentHistorySerializer
+    
+    @action(detail=True, methods=['get'])
+    def participants(self, request, pk=None):
+        """Получить участников турнира"""
+        tournament = self.get_object()
+        participants = tournament.participants.all()
+        serializer = TournamentParticipantSerializer(participants, many=True)
+        return Response(serializer.data)
+
 
 class GameViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
@@ -292,6 +311,77 @@ class GameViewSet(viewsets.ModelViewSet):
             return Response({"error": "User not found"}, status=404)
         except Participant.DoesNotExist:
             return Response({"error": "Participant not found"}, status=404)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def complete(self, request, pk=None):
+        """Завершить игру и создать запись в истории"""
+        game = self.get_object()
+        participants_data = request.data.get('participants', [])
+        
+        try:
+            # Создаем запись в истории турнира
+            tournament_history = TournamentHistory.objects.create(
+                game=game,
+                date=game.date,
+                time=game.time,
+                tournament_name=game.description or f"Турнир {game.date}",
+                location=game.location,
+                buyin=game.buyin,
+                reentry_buyin=game.reentry_buyin or game.buyin,
+                participants_count=len(participants_data)
+            )
+            
+            total_revenue = 0
+            
+            # Создаем записи участников
+            for p_data in participants_data:
+                user = Users.objects.get(pk=p_data['user_id'])
+                
+                entries = p_data.get('entries', 1)
+                rebuys = p_data.get('rebuys', 0)
+                addons = p_data.get('addons', 0)
+                
+                # Рассчитываем затраты участника
+                buyin_cost = entries * game.buyin
+                rebuy_cost = rebuys * (game.reentry_buyin or game.buyin)
+                addon_cost = addons * (game.reentry_buyin or game.buyin)
+                total_spent = buyin_cost + rebuy_cost + addon_cost
+                
+                total_revenue += total_spent
+                
+                TournamentParticipant.objects.create(
+                    tournament_history=tournament_history,
+                    user_id=user.user_id,
+                    username=user.username,
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    entries=entries,
+                    rebuys=rebuys,
+                    addons=addons,
+                    total_spent=total_spent,
+                    position=p_data.get('position'),
+                    prize=p_data.get('prize', 0)
+                )
+            
+            # Обновляем общую выручку
+            tournament_history.total_revenue = total_revenue
+            tournament_history.save()
+            
+            # Помечаем игру как завершенную
+            game.is_active = False
+            game.completed = True
+            game.completed_at = timezone.now()
+            game.save()
+            
+            serializer = TournamentHistorySerializer(tournament_history)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            logger.error(f"Error completing game: {str(e)}")
+            return Response(
+                {"error": f"Failed to complete game: {str(e)}"}, 
+                status=500
+            )
     
     @action(detail=True, methods=['post'])
     def update_participant_admin(self, request, pk=None):

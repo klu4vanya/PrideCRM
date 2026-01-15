@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { adminAPI } from "../utils/api"; // /admin/dashboard/
 import UsersTable from "./Admin/UserTable";
 import GamesTable from "./Admin/GameTable";
+import TournamentHistory from "./Admin/TournamentHistory";
 
 const Container = styled.div`
   padding: 20px;
@@ -36,7 +37,7 @@ const ErrorBox = styled.div`
 
 const AdminPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
-  const [tab, setTab] = useState<"users" | "games">("users");
+  const [tab, setTab] = useState<"users" | "games" | "history">("users");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,10 +80,14 @@ const AdminPage: React.FC = () => {
         <TabButton active={tab === "games"} onClick={() => setTab("games")}>
           Игры
         </TabButton>
+        <TabButton active={tab === "history"} onClick={() => setTab("history")}>
+          История турниров
+        </TabButton>
       </Menu>
 
       {tab === "users" && <UsersTable />}
       {tab === "games" && <GamesTable />}
+      {tab === "history" && <TournamentHistory />}
     </Container>
   );
 };
