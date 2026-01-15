@@ -203,7 +203,7 @@ const Select = styled.select`
 
   &:focus {
     outline: none;
-    border-color: #2196F3;
+    border-color: #2196f3;
   }
 
   &:not(:invalid) {
@@ -244,15 +244,17 @@ export default function GamesTable() {
   const [participants, setParticipants] = useState<ParticipantData[]>([]);
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
-  const [paymentMethods, setPaymentMethods] = useState<Map<number, string>>(new Map());
+  const [paymentMethods, setPaymentMethods] = useState<Map<number, string>>(
+    new Map()
+  );
 
   const [openGameId, setOpenGameId] = useState<number | null>(null);
 
   const PAYMENT_OPTIONS = [
-    { value: 'cash_ivan', label: 'Наличные Иван' },
-    { value: 'cash_petr', label: 'Наличные Петр' },
-    { value: 'qr_code', label: 'QR код' },
-    { value: 'card', label: 'Картой' },
+    { value: "cash_ivan", label: "Наличные Иван" },
+    { value: "cash_petr", label: "Наличные Петр" },
+    { value: "qr_code", label: "QR код" },
+    { value: "card", label: "Картой" },
   ];
 
   const load = async () => {
@@ -335,7 +337,7 @@ export default function GamesTable() {
   };
 
   const updatePaymentMethod = (participantId: number, method: string) => {
-    setPaymentMethods(prev => {
+    setPaymentMethods((prev) => {
       const newMap = new Map(prev);
       newMap.set(participantId, method);
       return newMap;
@@ -429,11 +431,13 @@ export default function GamesTable() {
 
   const completeGame = async () => {
     if (!manageMode) return;
-    const missingPayment = participants.some(p => !paymentMethods.get(p.id));
+    const missingPayment = participants.some((p) => !paymentMethods.get(p.id));
     if (missingPayment) {
-      if (!window.confirm(
-        "Не у всех участников указан метод оплаты. Продолжить завершение турнира?"
-      )) {
+      if (
+        !window.confirm(
+          "Не у всех участников указан метод оплаты. Продолжить завершение турнира?"
+        )
+      ) {
         return;
       }
     }
@@ -443,7 +447,7 @@ export default function GamesTable() {
       )
     )
       return;
-  
+
     try {
       // Формируем данные участников для истории
       const participantsData = participants.map((p) => ({
@@ -453,12 +457,12 @@ export default function GamesTable() {
         addons: p.addons,
         payment_method: paymentMethods.get(p.id) || null,
       }));
-  
+
       // Завершаем игру и создаем запись в истории
       await api.post(`/games/${manageMode.game_id}/complete/`, {
         participants: participantsData,
       });
-  
+
       alert("Турнир успешно завершен и добавлен в историю!");
       await load();
       close();
@@ -678,9 +682,27 @@ export default function GamesTable() {
                 <Summary>
                   <b>Итого:</b> {calculateTotal(p)} руб.
                 </Summary>
+
+                {/* Новый блок для выбора метода оплаты */}
+                <PaymentGroup>
+                  <Label style={{ display: "block", marginBottom: 8 }}>
+                    Метод оплаты:
+                  </Label>
+                  <Select
+                    value={paymentMethods.get(p.id) || ""}
+                    onChange={(e) => updatePaymentMethod(p.id, e.target.value)}
+                    required
+                  >
+                    <option value="">Выберите метод оплаты</option>
+                    {PAYMENT_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                </PaymentGroup>
               </ParticipantCard>
             ))}
-
             <Summary style={{ background: "#c8e6c9", fontWeight: "bold" }}>
               <h4 style={{ margin: "5px 0" }}>
                 Общая выручка: {calculateGameTotal()} руб.
