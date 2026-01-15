@@ -24,6 +24,7 @@ const Table = styled.table`
     padding: 10px;
     border-bottom: 1px solid #e0e0e0;
     text-align: left;
+    color: #000
   }
 
   th {
@@ -184,10 +185,6 @@ export default function TournamentHistory() {
             <SummaryCard>
               <h4>Участников</h4>
               <p>{tournament.participants_count}</p>
-            </SummaryCard>
-            <SummaryCard>
-              <h4>Buy-in</h4>
-              <p>{tournament.buyin} ₽</p>
             </SummaryCard>
             <SummaryCard>
               <h4>Общая выручка</h4>
