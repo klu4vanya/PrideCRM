@@ -279,6 +279,7 @@ export default function GamesTable() {
     try {
       const res = await api.get(`/games/${game.game_id}/participants_admin/`);
       setParticipants(res.data);
+      console.log("данные пользователей",res.data)
       setManageMode(game);
     } catch (error) {
       console.error("Ошибка загрузки участников:", error);
