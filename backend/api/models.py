@@ -169,6 +169,14 @@ class TournamentParticipant(models.Model):
     
     total_spent = models.IntegerField(default=0, help_text="Всего потрачено")
     
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PAYMENT_METHODS,
+        null=True,
+        blank=True,
+        help_text="Метод оплаты"
+    )
+    
     class Meta:
         verbose_name = "Участник турнира"
         verbose_name_plural = "Участники турнира"

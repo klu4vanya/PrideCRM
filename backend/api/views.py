@@ -359,7 +359,6 @@ class GameViewSet(viewsets.ModelViewSet):
                     rebuys=rebuys,
                     addons=addons,
                     total_spent=total_spent,
-                    prize=p_data.get('prize', 0),
                     payment_method=p_data.get('payment_method')  # Сохраняем метод оплаты
                 )
             
