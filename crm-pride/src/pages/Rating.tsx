@@ -146,7 +146,7 @@ const Rating: React.FC = () => {
             <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 2)
-                .map((item) => item.user.first_name)}
+                .map((item) => item.user.username)}
             </h4>
             <h5 style={{ color: "#fff" }}>
               {rating
@@ -166,7 +166,7 @@ const Rating: React.FC = () => {
             <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 1)
-                .map((item) => item.user.first_name)}
+                .map((item) => item.user.username)}
             </h4>
             <h5 style={{ color: "#fff" }}>
               {rating
@@ -185,7 +185,7 @@ const Rating: React.FC = () => {
             <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 3)
-                .map((item) => item.user.first_name)}
+                .map((item) => item.user.username)}
             </h4>
             <h5 style={{ color: "#fff" }}>
               {rating
@@ -209,7 +209,7 @@ const Rating: React.FC = () => {
             </Rank>
             <UserInfo>
               <div style={{ color: "#fff" }}>
-                {item.user.first_name} {item.user.last_name}
+                {item.user.username}
               </div>
               <div style={{ fontSize: "0.8em", color: "#666" }}>
                 Игр: {item.user.total_games_played}
