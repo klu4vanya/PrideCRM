@@ -36,7 +36,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
   alt,
   overlayColor = "black",
-  overlayOpacity = 0.0,
+  overlayOpacity = 0.4,
   ...rest
 }) => {
   const [didError, setDidError] = useState(false);

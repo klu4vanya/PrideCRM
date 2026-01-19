@@ -184,7 +184,7 @@ const Profile: React.FC = () => {
         src={backgroung_profile}
         alt="Cover"
         overlayColor="linear-gradient(180deg, rgba(185, 82, 8, 0.8), rgb(244, 101, 11, 0.4))"
-        overlayOpacity={7}
+        overlayOpacity={0}
       />
       <PhotoUser>
         <img src={test_photo} alt="Profile" />
