@@ -5,6 +5,7 @@ import { useTelegram } from "../hooks/useTelegram";
 import { ImageWithFallback } from "../components/ImageWithFallback";
 import { Title } from "./Schedule";
 import test_photo from "../assets/logo_pride.jpeg";
+import backgroung_profile from '../assets/background_profile.jpg'
 
 const ProfileContainer = styled.div`
   width: 100%;
@@ -173,7 +174,7 @@ const Profile: React.FC = () => {
   return (
     <ProfileContainer>
       <ImageWithFallback
-        src="https://images.unsplash.com/photo-1636583133884-fbefc7ac3fb3"
+        src={backgroung_profile}
         alt="Cover"
         overlayColor="linear-gradient(180deg, rgba(185, 82, 8, 0.8), rgb(244, 101, 11, 0.4))"
         overlayOpacity={7}
