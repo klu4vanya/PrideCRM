@@ -220,6 +220,7 @@ const Schedule: React.FC = () => {
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
         setAuthError(error.response?.data?.error || error.message);
+        console.log(authError)
         await loadGames();
       } finally {
         setLoading(false);
