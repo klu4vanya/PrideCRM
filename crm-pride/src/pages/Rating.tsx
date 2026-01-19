@@ -79,6 +79,7 @@ interface RatingUser {
     last_name: string;
     points: number;
     total_games_played: number;
+    nick_name: string
   };
   points: number;
   games_played: number;
@@ -123,7 +124,6 @@ const Rating: React.FC = () => {
     try {
       const response = await ratingAPI.getRating();
       setRating(response.data);
-      console.log(response.data)
     } catch (error) {
       console.error("Error loading rating:", error);
     } finally {
@@ -147,7 +147,7 @@ const Rating: React.FC = () => {
             <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 2)
-                .map((item) => item.user.username)}
+                .map((item) => item.user.nick_name)}
             </h4>
             <h5 style={{ color: "#fff" }}>
               {rating
@@ -167,7 +167,7 @@ const Rating: React.FC = () => {
             <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 1)
-                .map((item) => item.user.username)}
+                .map((item) => item.user.nick_name)}
             </h4>
             <h5 style={{ color: "#fff" }}>
               {rating
@@ -186,7 +186,7 @@ const Rating: React.FC = () => {
             <h4 style={{ color: "#fff" }}>
               {rating
                 .filter((item) => item.rank === 3)
-                .map((item) => item.user.username)}
+                .map((item) => item.user.nick_name)}
             </h4>
             <h5 style={{ color: "#fff" }}>
               {rating
@@ -210,7 +210,7 @@ const Rating: React.FC = () => {
             </Rank>
             <UserInfo>
               <div style={{ color: "#fff" }}>
-                {item.user.username}
+                {item.user.nick_name}
               </div>
               <div style={{ fontSize: "0.8em", color: "#666" }}>
                 Игр: {item.user.total_games_played}
