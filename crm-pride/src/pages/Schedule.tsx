@@ -142,7 +142,6 @@ const Schedule: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const { initData } = useTelegram();
-  const [authError, setAuthError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [registeringGameId, setRegisteringGameId] = useState<number | null>(null);
   const [unregisteringGameId, setUnregisteringGameId] = useState<number | null>(null);
@@ -219,8 +218,6 @@ const Schedule: React.FC = () => {
         }
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
-        setAuthError(error.response?.data?.error || error.message);
-        console.log(authError)
         await loadGames();
       } finally {
         setLoading(false);
