@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styled from "styled-components";
 import { authAPI, profileAPI } from "../utils/api";
 import { useTelegram } from "../hooks/useTelegram";
@@ -12,12 +12,15 @@ const ProfileContainer = styled.div`
   height: 100vh;
   background-color: #000;
 `;
+
 const Subtitle = styled.strong`
   color: #fff;
 `
+
 const ProfileAnswers = styled.p`
   color: #fff;
 `
+
 const ProfileSection = styled.div`
   background: #000;
   padding: 20px;
@@ -65,6 +68,7 @@ const StatCard = styled.div`
   border-radius: 10px;
   text-align: center;
 `;
+
 const PhotoUser = styled.div`
   position: relative;
   left: 15%;
@@ -97,6 +101,7 @@ interface UserProfile {
   };
   upcoming_games: any[];
 }
+
 const Profile: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editing, setEditing] = useState(false);
@@ -113,30 +118,8 @@ const Profile: React.FC = () => {
   const { initData } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  useEffect(() => {
-    const authenticateAndLoadProfile = async () => {
-      try {
-        if (initData) {
-          const authResponse = await authAPI.telegramInitAuth(initData);
-          <div>{initData}</div>;
-          if (authResponse.data.token) {
-            localStorage.setItem("auth_token", authResponse.data.token);
-            await loadProfile();
-          }
-        } else {
-          throw new Error("No token in response");
-        }
-      } catch (error: any) {
-        setAuthError(error.response?.data?.error || error.message);
-        loadProfile();
-      } finally {
-        setLoading(false);
-      }
-    };
-    authenticateAndLoadProfile();
-  }, [initData, authError]);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       const response = await profileAPI.getProfile();
       setProfile(response.data);
@@ -149,11 +132,34 @@ const Profile: React.FC = () => {
         date_of_birth: response.data.user.date_of_birth || "",
         points: response.data.user.points || 0,
       });
-      console.log("form data:", formData);
     } catch (error: any) {
-      <div>{error}</div>
+      console.error("Error loading profile:", error);
+      setAuthError(error.message);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const authenticateAndLoadProfile = async () => {
+      try {
+        if (initData) {
+          const authResponse = await authAPI.telegramInitAuth(initData);
+          if (authResponse.data.token) {
+            localStorage.setItem("auth_token", authResponse.data.token);
+            await loadProfile();
+          }
+        } else {
+          throw new Error("No initData available");
+        }
+      } catch (error: any) {
+        console.error("Authentication error:", error);
+        setAuthError(error.response?.data?.error || error.message);
+        await loadProfile(); // Пробуем загрузить профиль даже при ошибке
+      } finally {
+        setLoading(false);
+      }
+    };
+    authenticateAndLoadProfile();
+  }, [initData, loadProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,12 +170,13 @@ const Profile: React.FC = () => {
       alert("Профиль успешно обновлен!");
     } catch (error) {
       alert("Ошибка при обновлении профиля");
-      console.log("ошибка", error)
+      console.error("Update error:", error);
     }
   };
-  if (!profile) return <div>{profile}</div>;
 
   if (loading) return <div>Загрузка...</div>;
+  if (authError && !profile) return <div>Ошибка: {authError}</div>;
+  if (!profile) return <div>Профиль не найден</div>;
 
   return (
     <ProfileContainer>
@@ -178,9 +185,9 @@ const Profile: React.FC = () => {
         alt="Cover"
         overlayColor="linear-gradient(180deg, rgba(185, 82, 8, 0.8), rgb(244, 101, 11, 0.4))"
         overlayOpacity={7}
-      ></ImageWithFallback>
+      />
       <PhotoUser>
-        <img src={test_photo}/>
+        <img src={test_photo} alt="Profile" />
       </PhotoUser>
       <ProfileSection>
         <Title style={{ color: "#fff"}}>Мой профиль</Title>
@@ -266,7 +273,7 @@ const Profile: React.FC = () => {
           </Form>
         ) : (
           <div>
-            <ProfileAnswers >
+            <ProfileAnswers>
               <Subtitle>Никнейм:</Subtitle> {profile.user.nick_name || "Не указан"}
             </ProfileAnswers>
             <ProfileAnswers>

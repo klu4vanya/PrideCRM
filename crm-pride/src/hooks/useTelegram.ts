@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export const useTelegram = () => {
   const [webApp, setWebApp] = useState<any>(null);
@@ -34,19 +34,22 @@ export const useTelegram = () => {
     }, 50);
 
     // если Telegram так и НЕ передал initData → считаем не MiniApp
-    setTimeout(() => {
-      if (!initData) {
-        console.warn("⚠️ initData timeout. Probably not a Mini App.");
-        setIsReady(true);
-      }
+    const timeout = setTimeout(() => {
+      console.warn("⚠️ initData timeout. Probably not a Mini App.");
+      setIsReady(true);
       clearInterval(interval);
     }, 3000);
-  }, []);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []); // Оставляем пустой массив
 
   return {
     webApp,
     initData,
     isReady,
-    isTelegram: !!webApp && !!initData, // улучшено
+    isTelegram: !!webApp && !!initData,
   };
 };

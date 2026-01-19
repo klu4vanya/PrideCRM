@@ -24,12 +24,6 @@ const Title = styled.h1`
   letter-spacing: 2px;
 `;
 
-const Subtitle = styled.p`
-  font-size: 1.2rem;
-  color: #7f8c8d;
-  font-weight: 300;
-  letter-spacing: 1px;
-`;
 
 const StatsSection = styled.section`
   display: grid;

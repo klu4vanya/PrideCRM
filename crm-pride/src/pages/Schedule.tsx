@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styled from "styled-components";
 import { authAPI, gamesAPI } from "../utils/api";
 import { useTelegram } from "../hooks/useTelegram";
@@ -7,11 +7,13 @@ import { ReactComponent as Clock } from "../assets/clock.svg";
 import { ReactComponent as HandsCoin } from "../assets/hand-coins.svg";
 import { ReactComponent as User } from "../assets/user.svg";
 
+
 export const ScheduleContainer = styled.div`
   padding: 20px;
   height: 16%;
   background-color: #E0A65D;
 `;
+
 export const Title = styled.div`
   display: flex;
   align-items: center;
@@ -24,18 +26,21 @@ export const Title = styled.div`
     font-size: 20px;
   }
 `;
+
 const GamesList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 20px;
 `;
+
 const GameDataContainer = styled.div`
   display: grid;
   grid-template-columns: 50% 50%;
   gap: 16px;
   padding: 16px;
 `;
+
 const GameCard = styled.div`
   padding: 16px;
   border-radius: 10px;
@@ -143,7 +148,7 @@ const Schedule: React.FC = () => {
   const [unregisteringGameId, setUnregisteringGameId] = useState<number | null>(null);
 
   // Получаем данные текущего пользователя
-  const getCurrentUser = (): UserData | null => {
+  const getCurrentUser = useCallback((): UserData | null => {
     if (currentUser) return currentUser;
     
     try {
@@ -156,17 +161,29 @@ const Schedule: React.FC = () => {
     }
     
     return null;
-  };
+  }, [currentUser]);
 
   // Проверяем, зарегистрирован ли пользователь на игру
-  const isUserRegistered = (game: Game): boolean => {
+  const isUserRegistered = useCallback((game: Game): boolean => {
     const user = getCurrentUser();
     if (!user || !game.participants_details) return false;
     
     return game.participants_details.some(
       participant => participant.user.user_id === user.user_id
     );
-  };
+  }, [getCurrentUser]);
+
+  const loadGames = useCallback(async () => {
+    try {
+      const response = await gamesAPI.getGames();
+      setGames(response.data);
+    } catch (error) {
+      console.error("Error loading games:", error);
+      setGames([Game_test]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const authenticateAndLoadProfile = async () => {
@@ -198,33 +215,20 @@ const Schedule: React.FC = () => {
             await loadGames();
           }
         } else {
-          throw new Error("No token in response");
+          throw new Error("No initData available");
         }
       } catch (error: any) {
         console.error("❌ Authentication error:", error);
         setAuthError(error.response?.data?.error || error.message);
-        console.log(authError);
-        loadGames();
+        await loadGames();
       } finally {
         setLoading(false);
       }
     };
     authenticateAndLoadProfile();
-  }, [initData]);
+  }, [initData, loadGames]);
 
-  const loadGames = async () => {
-    try {
-      const response = await gamesAPI.getGames();
-      setGames(response.data);
-    } catch (error) {
-      console.error("Error loading games:", error);
-      setGames([Game_test]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegistration = (gameId: number, isCurrentlyRegistered: boolean) => async () => {
+  const handleRegistration = useCallback((gameId: number, isCurrentlyRegistered: boolean) => async () => {
     if (isCurrentlyRegistered) {
       if (!window.confirm("Вы уверены, что хотите отменить регистрацию?")) return;
 
@@ -250,7 +254,7 @@ const Schedule: React.FC = () => {
         setRegisteringGameId(null);
       }
     }
-  };
+  }, [loadGames]);
 
   if (loading) return <div>Загрузка расписания...</div>;
 
@@ -265,7 +269,7 @@ const Schedule: React.FC = () => {
       <GamesList>
         {games.map((game) => {
           const userRegistered = isUserRegistered(game);
-          const isLoading = registeringGameId === game.game_id || unregisteringGameId === game.game_id;
+          const isGameLoading = registeringGameId === game.game_id || unregisteringGameId === game.game_id;
           
           return (
             <GameCard key={game.game_id}>
@@ -295,13 +299,13 @@ const Schedule: React.FC = () => {
                 </PrizeFoundContainer>
                 <RegisterButton
                   onClick={handleRegistration(game.game_id, userRegistered)}
-                  disabled={isLoading || !currentUser}
+                  disabled={isGameLoading || !currentUser}
                   style={{
                     background: userRegistered ?  "#d03f05" : "#E0A65D",
                     opacity: !currentUser ? 0.5 : 1
                   }}
                 >
-                  {isLoading
+                  {isGameLoading
                     ? "Загрузка..."
                     : !currentUser
                     ? "Войдите в аккаунт"
