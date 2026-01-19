@@ -123,6 +123,7 @@ const Rating: React.FC = () => {
     try {
       const response = await ratingAPI.getRating();
       setRating(response.data);
+      console.log(response.data)
     } catch (error) {
       console.error("Error loading rating:", error);
     } finally {
