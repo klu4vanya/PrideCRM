@@ -292,8 +292,8 @@ const Schedule: React.FC = () => {
               </GameDataContainer>
               <PrizeAndButtonContainer>
                 <PrizeFoundContainer>
-                  <GameInfo>Всего очков</GameInfo>
-                  <GameHeader>320</GameHeader>
+                  <GameInfo>Минимально очков</GameInfo>
+                  <GameHeader>{game.participants_count * 10}</GameHeader>
                 </PrizeFoundContainer>
                 <RegisterButton
                   onClick={handleRegistration(game.game_id, userRegistered)}

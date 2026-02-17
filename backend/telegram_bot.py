@@ -9,7 +9,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 MINI_APP_URL = "https://pride-crm.vercel.app/"
-API_BASE_URL = os.getenv("API_BASE_URL", "https://preeminent-karisa-nonministerially.ngrok-free.dev/api")
+API_BASE_URL = os.getenv("REACT_APP_API_URL", "https://preeminent-karisa-nonministerially.ngrok-free.dev/api")
 
 if not BOT_TOKEN:
     raise ValueError("❌ TELEGRAM_BOT_TOKEN not set in .env")
